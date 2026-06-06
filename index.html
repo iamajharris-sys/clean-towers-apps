@@ -1121,6 +1121,31 @@
     font-size: 16px;
   }
   .btn-bid:hover { background: #223a63; }
+
+  /* Modern tech-app neutral buttons: white fill, hairline border, dark text.
+     Targets the action-row trio (quick bid, cold email, reclean email) only —
+     the generate-quote-pdf button keeps its sky fill. */
+  #bidBtn.btn-bid,
+  #emailBtn.btn-email,
+  #emailRecleanBtn.btn-email-reclean {
+    background: #eef1f5;
+    color: var(--navy);
+    border: 2px solid var(--border-bright);
+    box-shadow: 0 1px 2px rgba(16,24,40,0.04);
+    font-weight: 600;
+  }
+  #bidBtn.btn-bid:hover,
+  #emailBtn.btn-email:hover,
+  #emailRecleanBtn.btn-email-reclean:hover {
+    background: #e6eaf0;
+    border-color: #c1c8d4;
+  }
+  #bidBtn.btn-bid:active,
+  #emailBtn.btn-email:active,
+  #emailRecleanBtn.btn-email-reclean:active {
+    transform: scale(0.97);
+    background: #dfe3ea;
+  }
   .bid-form {
     background: var(--surface, #f7f9fb);
     border: 1px solid var(--border);
@@ -1526,6 +1551,80 @@
     animation: iosFade 0.85s ease-out forwards 0s;
   }
   .splash-title span { color: #29ABE2; font-weight: 400; }
+
+  /* ── PAY UP ──────────────────────────────────────────────────────────── */
+  #view-payup { padding: 16px; max-width: 760px; margin: 0 auto; }
+  .payup-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+  .payup-stats { display: flex; gap: 22px; }
+  .pu-stat-num { font-size: 22px; font-weight: 800; color: var(--navy); letter-spacing: -0.02em; }
+  .pu-stat-lbl { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); margin-top: 2px; }
+  .payup-actions { display: flex; gap: 8px; }
+  .payup-btn-add {
+    background: var(--sky); border: 2px solid var(--navy); border-radius: 20px; color: #fff;
+    font-family: 'Inter', sans-serif; font-weight: 700; font-size: 14px; padding: 9px 18px; cursor: pointer; transition: all 0.2s;
+  }
+  .payup-btn-add:hover { background: #1d96cc; }
+  .payup-btn-archive {
+    background: #eef1f5; border: 1px solid var(--border-bright); border-radius: 20px; color: var(--text);
+    font-family: 'Inter', sans-serif; font-weight: 600; font-size: 14px; padding: 9px 14px; cursor: pointer; transition: all 0.2s;
+  }
+  .payup-btn-archive:hover { background: #e3e8ef; }
+  .payup-filters { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 6px; margin-bottom: 12px; -webkit-overflow-scrolling: touch; }
+  .pf-chip {
+    flex-shrink: 0; background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
+    color: var(--text-muted); font-family: 'Inter', sans-serif; font-weight: 600; font-size: 13px; padding: 6px 14px; cursor: pointer; transition: all 0.15s;
+  }
+  .pf-chip.active { background: var(--navy); border-color: var(--navy); color: #fff; }
+
+  .payup-list { display: flex; flex-direction: column; gap: 10px; }
+  .pu-row { position: relative; border-radius: 14px; overflow: hidden; }
+  .pu-swipe-bg {
+    position: absolute; inset: 0; background: #2ecc71; border-radius: 14px;
+    display: flex; align-items: center; padding-left: 22px;
+    color: #fff; font-weight: 800; font-size: 15px; letter-spacing: 0.04em;
+  }
+  .pu-card {
+    position: relative; background: var(--card); border: 1px solid var(--border); border-radius: 14px;
+    box-shadow: var(--shadow); overflow: hidden; touch-action: pan-y; will-change: transform; cursor: grab;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  .pu-card:hover { border-color: var(--border-bright); box-shadow: var(--shadow-lg); }
+  .pu-accent { position: absolute; left: 0; top: 0; bottom: 0; width: 4px; border-radius: 14px 0 0 14px; }
+  .pu-card-body { padding: 13px 16px 13px 18px; }
+  .pu-amount { font-size: 24px; font-weight: 800; color: #1e9e54; letter-spacing: -0.02em; line-height: 1.05; }
+  .pu-client { font-size: 13px; font-weight: 600; color: var(--text-muted); margin-top: 3px; }
+  .pu-num { color: var(--text-dim); font-weight: 500; }
+  .pu-card-meta { display: flex; align-items: center; gap: 8px; margin-top: 9px; flex-wrap: wrap; }
+  .pu-badge { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; padding: 2px 8px; border-radius: 5px; border: 1px solid; }
+  .pu-days { font-size: 12px; color: var(--text-muted); }
+  .pu-note { font-size: 12px; color: var(--text-muted); margin-top: 9px; padding-top: 9px; border-top: 1px solid var(--border); }
+  .pu-rotbar { height: 4px; width: 100%; background: var(--border); }
+  .pu-rotbar-fill { height: 100%; transition: width 0.3s ease; }
+  .pu-empty { text-align: center; padding: 40px 16px; color: var(--text-dim); font-size: 14px; }
+  .pu-empty-emoji { font-size: 40px; margin-bottom: 10px; }
+
+  .inv-detail-amt { font-size: 34px; font-weight: 800; color: var(--navy); text-align: center; margin: 4px 0 16px; letter-spacing: -0.02em; }
+  .inv-detail-rows { display: flex; flex-direction: column; gap: 0; }
+  .idr { display: flex; justify-content: space-between; align-items: center; padding: 11px 0; border-bottom: 1px solid var(--border); font-size: 14px; }
+  .idr:last-child { border-bottom: none; }
+  .idr span { color: var(--text-muted); }
+  .idr b { color: var(--text); }
+
+  .paid-total { font-size: 13px; font-weight: 700; color: var(--navy); text-align: center; margin-bottom: 12px; }
+  .paid-card { background: #f7f8fa; border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; margin-bottom: 8px; cursor: pointer; transition: all 0.15s; }
+  .paid-card:hover { border-color: var(--border-bright); }
+  .paid-top { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+  .paid-client { font-size: 14px; font-weight: 700; color: var(--text); }
+  .paid-amt { font-size: 14px; font-weight: 800; color: #2ecc71; }
+  .paid-meta { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+  .paid-undo { font-size: 10px; color: var(--text-dim); margin-top: 5px; }
+
+  @media (max-width: 768px){
+    .payup-head { flex-direction: column; align-items: stretch; }
+    .payup-stats { justify-content: space-between; gap: 8px; }
+    .payup-actions { justify-content: space-between; }
+    .payup-btn-add, .payup-btn-archive { flex: 1; }
+  }
 </style>
 
 <!-- SPLASH SCREEN -->
@@ -1562,6 +1661,7 @@
   <button class="tab active" data-view="today" onclick="switchView('today')">Today</button>
   <button class="tab" data-view="board" onclick="switchView('board')">Board</button>
   <button class="tab" data-view="map" onclick="switchView('map')">Map</button>
+  <button class="tab" data-view="payup" onclick="switchView('payup')">Pay Up</button>
 </div>
 
 <!-- TODAY VIEW -->
@@ -1585,6 +1685,25 @@
     <button id="locateBtn" class="locate-btn" onclick="toggleLocate()" title="My location">📍</button>
     <div id="nearPanel" class="near-panel"></div>
   </div>
+</div>
+
+<!-- PAY UP VIEW -->
+<div class="view" id="view-payup" style="display:none">
+  <div class="payup-head">
+    <div class="payup-stats" id="payupStats"></div>
+    <div class="payup-actions">
+      <button class="payup-btn-add" onclick="openInvoiceAdd()">+ invoice</button>
+      <button class="payup-btn-archive" onclick="openPaidArchive()">📁 paid</button>
+    </div>
+  </div>
+  <div class="payup-filters" id="payupFilters">
+    <button class="pf-chip active" data-filter="all" onclick="setInvoiceFilter('all')">All</button>
+    <button class="pf-chip" data-filter="fresh" onclick="setInvoiceFilter('fresh')">Fresh</button>
+    <button class="pf-chip" data-filter="aging" onclick="setInvoiceFilter('aging')">Aging</button>
+    <button class="pf-chip" data-filter="overdue" onclick="setInvoiceFilter('overdue')">Overdue</button>
+    <button class="pf-chip" data-filter="rotted" onclick="setInvoiceFilter('rotted')">Rotted</button>
+  </div>
+  <div class="payup-list" id="payupList"></div>
 </div>
 
 <!-- ADD/EDIT BOTTOM SHEET -->
@@ -1641,6 +1760,19 @@
         <div style="font-size:11px;color:var(--text-muted);margin-top:6px">type the building name or address, pick from the dropdown — this places it on the map when you save</div>
       </div>
 
+      <div class="section-label">pipeline</div>
+
+      <div class="field">
+        <label>Stage</label>
+        <select id="f_stage">
+          <option value="cold">Cold</option>
+          <option value="contacted">Contacted</option>
+          <option value="quoted">On The Calendar</option>
+          <option value="client">Cleaned</option>
+          <option value="repeat">Dirty</option>
+        </select>
+      </div>
+
       <div class="section-label">contact</div>
 
       <div class="field">
@@ -1658,18 +1790,6 @@
         </div>
       </div>
 
-      <div class="section-label">pipeline</div>
-
-      <div class="field">
-        <label>Stage</label>
-        <select id="f_stage">
-          <option value="cold">Cold</option>
-          <option value="contacted">Contacted</option>
-          <option value="quoted">On The Calendar</option>
-          <option value="client">Cleaned</option>
-          <option value="repeat">Dirty</option>
-        </select>
-      </div>
       <div class="field">
         <label>Notes</label>
         <textarea id="f_notes" placeholder="Add a note..."></textarea>
@@ -1680,25 +1800,13 @@
         <input type="date" id="f_cleanedAt">
       </div>
 
-      <!-- Outreach toggle -->
-      <div class="field" style="margin-bottom:0">
-        <div style="display:flex;align-items:center;justify-content:space-between;background:#f7f8fa;border:1px solid var(--border);border-radius:10px;padding:14px 16px;">
-          <span style="font-size:15px;color:var(--text)">Outreach Sent</span>
-          <label style="position:relative;display:inline-block;width:48px;height:28px;margin:0">
-            <input type="checkbox" id="f_outreach" style="opacity:0;width:0;height:0;position:absolute">
-            <span id="toggle_track" style="position:absolute;cursor:pointer;inset:0;background:#333;border-radius:14px;transition:0.3s">
-              <span id="toggle_thumb" style="position:absolute;height:22px;width:22px;left:3px;bottom:3px;background:white;border-radius:50%;transition:0.3s"></span>
-            </span>
-          </label>
-        </div>
-      </div>
     </div>
     <div class="modal-footer">
       <button class="btn-save-full" id="saveBtn" onclick="saveBuilding()" style="display:none">Save</button>
 
       <!-- Quick Bid inline form (hidden until quick bid tapped) -->
       <div id="bidForm" class="bid-form" style="display:none">
-        <div class="bid-form-title">📄 quick bid</div>
+        <div class="bid-form-title">📄 BID IT</div>
         <div class="bid-field-label" style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin:2px 0 6px">exterior window cleaning</div>
         <div class="bid-fields">
           <div class="bid-field">
@@ -1746,7 +1854,7 @@
       </div>
 
       <div class="btn-row" id="bidRow" style="display:none;margin-bottom:8px">
-        <button class="btn-email btn-bid" id="bidBtn" onclick="openBidForm()" style="flex:1">📄 quick bid</button>
+        <button class="btn-email btn-bid" id="bidBtn" onclick="openBidForm()" style="flex:1">📄 BID IT</button>
       </div>
       <div class="btn-row" id="actionRow">
         <button class="btn-cancel" onclick="closeModal()" style="flex:0 0 auto;width:90px">cancel</button>
@@ -1780,6 +1888,59 @@
         this will merge with existing data.<br>duplicates are skipped by name.
       </p>
     </div>
+  </div>
+</div>
+
+<!-- PAY UP: ADD INVOICE -->
+<div class="modal-bg" id="invoiceAddModal">
+  <div class="modal" style="max-width:520px">
+    <div class="sheet-handle"></div>
+    <div class="modal-head">
+      <div class="modal-head-left"><div class="modal-title">add invoice</div></div>
+      <button class="modal-close" onclick="closeInvoiceAdd()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="field"><label>Client / Building *</label><input type="text" id="inv_client" placeholder="e.g. Crystal Point"></div>
+      <div class="field-row">
+        <div class="field"><label>Amount *</label><input type="number" id="inv_amount" placeholder="8450" inputmode="decimal"></div>
+        <div class="field"><label>Invoice # (optional)</label><input type="text" id="inv_num" placeholder="2610037"></div>
+      </div>
+      <div class="field"><label>Date Sent</label><input type="date" id="inv_date"></div>
+      <div class="field"><label>Notes</label><textarea id="inv_notes" placeholder="Add a note..."></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-save-full" onclick="saveInvoice()">Save invoice</button>
+      <button class="btn-cancel" onclick="closeInvoiceAdd()">cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- PAY UP: INVOICE DETAIL -->
+<div class="modal-bg" id="invoiceDetailModal">
+  <div class="modal" style="max-width:520px">
+    <div class="sheet-handle"></div>
+    <div class="modal-head">
+      <div class="modal-head-left"><div class="modal-title" id="invDetailTitle">invoice</div></div>
+      <button class="modal-close" onclick="closeInvoiceDetail()">✕</button>
+    </div>
+    <div class="modal-body" id="invDetailBody"></div>
+    <div class="modal-footer">
+      <button class="btn-save-full" onclick="markDetailPaid()" style="background:#2ecc71;border-color:#27ae60">✓ mark paid</button>
+      <button class="btn-cancel" onclick="saveInvoiceNote()">save note</button>
+      <button class="btn-cancel" style="color:#e74c3c;border-color:#e74c3c44" onclick="deleteInvoice()">delete invoice</button>
+    </div>
+  </div>
+</div>
+
+<!-- PAY UP: PAID ARCHIVE -->
+<div class="modal-bg" id="paidArchiveModal">
+  <div class="modal" style="max-width:560px">
+    <div class="sheet-handle"></div>
+    <div class="modal-head">
+      <div class="modal-head-left"><div class="modal-title">📁 paid invoices</div></div>
+      <button class="modal-close" onclick="closePaidArchive()">✕</button>
+    </div>
+    <div class="modal-body" id="paidArchiveBody"></div>
   </div>
 </div>
 
@@ -1881,7 +2042,7 @@ const LEVELS = [
   { lvl:7, name:'Juggernaut',       min:15000 },
 ];
 
-let game = { xp:0, level:1, dailyDate:'', dailyXp:0, badges:[] };
+let game = { xp:0, level:1, dailyDate:'', dailyXp:0, badges:[], objective:{ week:'', emails:0, contacts:0 }, activityLog:[] };
 
 // ── WEEKLY OBJECTIVE (per-device, resets each week) ─────────────────────────
 function weekStr(){
@@ -1894,35 +2055,37 @@ function weekStr(){
   return monday.toDateString();             // unique per week, changes every Monday
 }
 function getObjective(){
-  try {
-    const o = JSON.parse(localStorage.getItem('ct_objective')||'{}');
-    if (o.week === weekStr()) return { week:o.week, emails:o.emails||0, contacts:o.contacts||0 };
-  } catch(e){}
+  const o = game.objective || {};
+  if (o.week === weekStr()) return { week:o.week, emails:o.emails||0, contacts:o.contacts||0 };
   return { week: weekStr(), emails:0, contacts:0 };
 }
 function bumpObjective(field){
   const o = getObjective();
   o[field] = (o[field]||0) + 1;
-  try { localStorage.setItem('ct_objective', JSON.stringify(o)); } catch(e){}
+  game.objective = o;
+  saveGame();
   renderToday();
 }
 
 // ── ACTIVITY LOG (for weekly recap) ─────────────────────────────────────────
 let activityLog = [];
 function loadLog(){
-  try { activityLog = JSON.parse(localStorage.getItem('ct_log')||'[]'); } catch(e){ activityLog = []; }
-  // prune anything older than 30 days to keep it small
+  // activityLog now lives on the synced game object; keep the module-level
+  // alias pointing at it and prune anything older than 30 days.
+  if (!Array.isArray(game.activityLog)) game.activityLog = [];
   const cutoff = Date.now() - 30*86400000;
-  activityLog = activityLog.filter(e=>e.t > cutoff);
+  game.activityLog = game.activityLog.filter(e=>e.t > cutoff);
+  activityLog = game.activityLog;
 }
 function logActivity(type, detail, xp){
-  activityLog.push({ t:Date.now(), type, detail:detail||'', xp:xp||0 });
-  try { localStorage.setItem('ct_log', JSON.stringify(activityLog)); } catch(e){}
+  if (!Array.isArray(game.activityLog)) game.activityLog = [];
+  game.activityLog.push({ t:Date.now(), type, detail:detail||'', xp:xp||0 });
+  activityLog = game.activityLog;
+  saveGame();
 }
 function weekActivity(){
-  // entries from the last 7 days
   const cutoff = Date.now() - 7*86400000;
-  return activityLog.filter(e=>e.t > cutoff);
+  return (game.activityLog||[]).filter(e=>e.t > cutoff);
 }
 
 // ── WEEKLY RECAP (Friday end-of-game tally) ─────────────────────────────────
@@ -2041,8 +2204,35 @@ async function loadGame(){
         game.dailyXp = (cached && cached.dailyDate === todayStr()) ? (cached.dailyXp||0) : 0;
       }
       try { localStorage.setItem('ct_game', JSON.stringify(game)); } catch(e){}
+
+      // ── OBJECTIVE: reconcile to the higher weekly count so a stale device
+      //    can't zero out progress made on another device this week.
+      const cloudObj = data.objective || {};
+      const localObj = (cached && cached.objective) || {};
+      const wk = weekStr();
+      const cE = (cloudObj.week === wk) ? (cloudObj.emails||0)   : 0;
+      const lE = (localObj.week === wk) ? (localObj.emails||0)   : 0;
+      const cC = (cloudObj.week === wk) ? (cloudObj.contacts||0) : 0;
+      const lC = (localObj.week === wk) ? (localObj.contacts||0) : 0;
+      game.objective = { week: wk, emails: Math.max(cE,lE), contacts: Math.max(cC,lC) };
+
+      // ── ACTIVITY LOG: union both devices' entries, dedup by timestamp+type,
+      //    prune to 30 days.
+      const cloudLog = Array.isArray(data.activity_log) ? data.activity_log : [];
+      const localLog = (cached && Array.isArray(cached.activityLog)) ? cached.activityLog : [];
+      const cutoff = Date.now() - 30*86400000;
+      const seen = new Set();
+      game.activityLog = [...cloudLog, ...localLog]
+        .filter(e => e && e.t > cutoff)
+        .filter(e => { const k = e.t + '|' + (e.type||''); if (seen.has(k)) return false; seen.add(k); return true; })
+        .sort((a,b) => a.t - b.t);
+      activityLog = game.activityLog;
+
+      try { localStorage.setItem('ct_game', JSON.stringify(game)); } catch(e){}
       // if our reconciled value beats the cloud, push it back so cloud stays authoritative
-      if (game.xp > cloudXp || game.dailyXp > (data.daily_xp||0)) saveGame();
+      const objBeatsCloud = game.objective.emails > cE || game.objective.contacts > cC;
+      const logBeatsCloud = game.activityLog.length > cloudLog.length;
+      if (game.xp > cloudXp || game.dailyXp > (data.daily_xp||0) || objBeatsCloud || logBeatsCloud) saveGame();
     } else {
       if (game.dailyDate !== todayStr()){ game.dailyDate = todayStr(); game.dailyXp = 0; }
       saveGame();
@@ -2073,7 +2263,10 @@ function saveGame(){
       await sb.from('game_state').upsert({
         id:'aj', xp:game.xp, level:game.level,
         daily_date:game.dailyDate, daily_xp:game.dailyXp,
-        badges:game.badges, updated_at:Date.now()
+        badges:game.badges,
+        objective:game.objective || {},
+        activity_log:game.activityLog || [],
+        updated_at:Date.now()
       }, { onConflict:'id' });
     } catch(e){}
   }, 400);
@@ -2340,6 +2533,7 @@ function switchView(v) {
   document.getElementById('view-today').style.display = (v==='today') ? 'block' : 'none';
   document.getElementById('view-board').style.display = (v==='board') ? 'block' : 'none';
   document.getElementById('view-map').style.display   = (v==='map')   ? 'block' : 'none';
+  document.getElementById('view-payup').style.display = (v==='payup') ? 'block' : 'none';
   try { localStorage.setItem('ct_view', v); } catch(e){}
   if (v === 'today'){
     // animate weather icons only when toggling INTO Today from another view (not initial load)
@@ -2351,6 +2545,7 @@ function switchView(v) {
     if (tc && _todayFaded) tc.classList.add('page-shown');
   }
   if (v === 'map') initMap();
+  if (v === 'payup') renderPayup();
 }
 
 // ── TODAY DASHBOARD ─────────────────────────────────────────────────────────
@@ -3183,7 +3378,7 @@ function showSaveBtn(){ const s=document.getElementById('saveBtn'); if(s) s.styl
 let _dirtyWired=false;
 function wireDirtyTracking(){
   if (_dirtyWired) return; // bind once
-  ['f_name','f_city','f_type','f_floors','f_value','f_address','f_contact','f_phone','f_email','f_stage','f_notes','f_cleanedAt','f_outreach']
+  ['f_name','f_city','f_type','f_floors','f_value','f_address','f_contact','f_phone','f_email','f_stage','f_notes','f_cleanedAt']
     .forEach(id=>{
       const el=document.getElementById(id);
       if(!el) return;
@@ -3213,10 +3408,8 @@ function clearForm() {
   document.getElementById('f_city').value = 'Scottsdale';
   document.getElementById('f_type').value = 'Residential';
   document.getElementById('f_stage').value = 'cold';
-  document.getElementById('f_outreach').checked = false;
   document.getElementById('f_cleanedAt').value = '';
   document.getElementById('cleanedDateField').style.display = 'none';
-  updateToggleUI(false);
 }
 
 function fillForm(b) {
@@ -3241,14 +3434,13 @@ function fillForm(b) {
   document.getElementById('f_notes').value = b.notes || '';
   document.getElementById('f_address').value = b.address || '';
   _pickedPlace = null;
-  document.getElementById('f_outreach').checked = !!b.outreachSent;
-  updateToggleUI(!!b.outreachSent);
 }
 
 function saveBuilding() {
   const name = document.getElementById('f_name').value.trim();
   if (!name) { showToast('⚠ building name required'); return; }
-  const outreachSent = document.getElementById('f_outreach').checked;
+  const _editTarget = editingId ? buildings.find(x => x.id === editingId) : null;
+  const outreachSent = _editTarget ? !!_editTarget.outreachSent : false;
   const address = document.getElementById('f_address').value.trim();
 
   let target;
@@ -3818,10 +4010,275 @@ function launchConfetti() {
 // ── INIT ──────────────────────────────────────────────────────────────────
 
 
+// ── PAY UP (invoices) ───────────────────────────────────────────────────────
+// Small HTML-escape helper (prospects renders most values raw; invoices use this).
+function esc(s){
+  return String(s==null?'':s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+let invoices = [];                 // all invoices (paid + unpaid) from Supabase
+let _invoiceFilter = 'all';
+let _invoicesLoaded = false;
+
+async function loadInvoices(){
+  try {
+    const { data, error } = await sb.from('invoices').select('*');
+    if (error){ console.error(error); return; }
+    invoices = data || [];
+    _invoicesLoaded = true;
+    if (currentView === 'payup') renderPayup();
+  } catch(e){ console.error(e); }
+}
+
+// Days since the invoice was sent (whole days, >= 0).
+function invoiceDays(inv){
+  if (!inv.date_sent) return 0;
+  const sent = new Date(inv.date_sent + 'T00:00:00');
+  const ms = Date.now() - sent.getTime();
+  return Math.max(0, Math.floor(ms / 86400000));
+}
+
+// Rot stage from days outstanding. 0-10 fresh → 11-20 aging → 21-35 overdue
+// → 36-50 red → 51+ rotted. Returns {key, label, color, pct}.
+function rotStage(days){
+  if (days <= 10)  return { key:'fresh',   label:'Fresh',   color:'#2ecc71' };
+  if (days <= 20)  return { key:'aging',   label:'Aging',   color:'#f1c40f' };
+  if (days <= 35)  return { key:'overdue', label:'Overdue', color:'#e67e22' };
+  if (days <= 50)  return { key:'red',     label:'Overdue', color:'#e74c3c' };
+  return { key:'rotted', label:'Rotted', color:'#6b3410' };
+}
+// progress along the 0→60 rot bar (clamped)
+function rotPct(days){ return Math.min(100, Math.round((days/60)*100)); }
+
+// map a stage key to the filter buckets (red rolls into "overdue" filter)
+function stageFilterKey(key){ return key === 'red' ? 'overdue' : key; }
+
+function setInvoiceFilter(f){
+  _invoiceFilter = f;
+  document.querySelectorAll('.pf-chip').forEach(c => c.classList.toggle('active', c.dataset.filter === f));
+  renderPayup();
+}
+
+function money(n){
+  return '$' + Number(n||0).toLocaleString('en-US');
+}
+
+function renderPayup(){
+  if (!_invoicesLoaded){ loadInvoices(); }
+  const open = invoices.filter(i => !i.paid);
+  // stats
+  const totalOut = open.reduce((s,i)=>s+Number(i.amount||0),0);
+  const oldest = open.reduce((m,i)=>Math.max(m, invoiceDays(i)), 0);
+  document.getElementById('payupStats').innerHTML =
+    `<div class="pu-stat"><div class="pu-stat-num">${money(totalOut)}</div><div class="pu-stat-lbl">outstanding</div></div>
+     <div class="pu-stat"><div class="pu-stat-num">${open.length}</div><div class="pu-stat-lbl">open invoices</div></div>
+     <div class="pu-stat"><div class="pu-stat-num">${oldest}d</div><div class="pu-stat-lbl">oldest</div></div>`;
+
+  // filtered + sorted (oldest/most-rotted first)
+  let list = open.slice().sort((a,b)=>invoiceDays(b)-invoiceDays(a));
+  if (_invoiceFilter !== 'all'){
+    list = list.filter(i => stageFilterKey(rotStage(invoiceDays(i)).key) === _invoiceFilter);
+  }
+
+  const wrap = document.getElementById('payupList');
+  if (!list.length){
+    wrap.innerHTML = `<div class="pu-empty"><div class="pu-empty-emoji">🧾</div>no ${_invoiceFilter==='all'?'open':_invoiceFilter} invoices</div>`;
+    return;
+  }
+  wrap.innerHTML = list.map(inv => {
+    const days = invoiceDays(inv);
+    const st = rotStage(days);
+    const pct = rotPct(days);
+    return `<div class="pu-row" data-id="${inv.id}">
+      <div class="pu-swipe-bg"><span>✓ PAID</span></div>
+      <div class="pu-card" data-id="${inv.id}">
+        <div class="pu-accent" style="background:${st.color}"></div>
+        <div class="pu-card-body" onclick="openInvoiceDetail('${inv.id}')">
+          <div class="pu-amount">${money(inv.amount)}</div>
+          <div class="pu-client">${esc(inv.client||'—')}${inv.num ? ` · <span class="pu-num">#${esc(inv.num)}</span>` : ''}</div>
+          <div class="pu-card-meta">
+            <span class="pu-badge" style="color:${st.color};border-color:${st.color}55;background:${st.color}14">${st.label}</span>
+            <span class="pu-days">${days}d outstanding</span>
+          </div>
+          ${inv.notes ? `<div class="pu-note">${esc(inv.notes)}</div>` : ''}
+        </div>
+        <div class="pu-rotbar"><div class="pu-rotbar-fill" style="width:${pct}%;background:${st.color}"></div></div>
+      </div>
+    </div>`;
+  }).join('');
+  wireInvoiceSwipe();
+}
+
+// Swipe-right-to-pay (touch) on each pu-card.
+function wireInvoiceSwipe(){
+  document.querySelectorAll('#payupList .pu-card').forEach(card => {
+    let startX=0, dx=0, dragging=false;
+    const onStart = (x)=>{ startX=x; dragging=true; card.style.transition='none'; };
+    const onMove = (x)=>{
+      if(!dragging) return;
+      dx = Math.max(0, x-startX);              // only allow swipe right
+      card.style.transform = `translateX(${dx}px)`;
+    };
+    const onEnd = ()=>{
+      if(!dragging) return; dragging=false;
+      card.style.transition='transform 0.3s cubic-bezier(0.34,1.56,0.64,1)';
+      if (dx > 120){
+        card.style.transform = `translateX(120%)`;
+        const id = card.dataset.id;
+        setTimeout(()=>markInvoicePaid(id), 220);
+      } else {
+        card.style.transform = 'translateX(0)';
+      }
+      dx=0;
+    };
+    card.addEventListener('touchstart', e=>onStart(e.touches[0].clientX), {passive:true});
+    card.addEventListener('touchmove',  e=>onMove(e.touches[0].clientX),  {passive:true});
+    card.addEventListener('touchend',   onEnd);
+    // mouse (desktop) support
+    card.addEventListener('mousedown', e=>{ onStart(e.clientX); 
+      const mm=ev=>onMove(ev.clientX), mu=()=>{onEnd();document.removeEventListener('mousemove',mm);document.removeEventListener('mouseup',mu);};
+      document.addEventListener('mousemove',mm); document.addEventListener('mouseup',mu);
+    });
+  });
+}
+
+async function markInvoicePaid(id){
+  const inv = invoices.find(i=>i.id===id);
+  if (!inv) return;
+  const today = new Date().toISOString().slice(0,10);
+  inv.paid = true; inv.paid_date = today;
+  renderPayup();
+  showToast('✓ marked paid');
+  try {
+    await sb.from('invoices').update({ paid:true, paid_date:today }).eq('id', id);
+  } catch(e){ console.error(e); showToast('⚠ could not save'); }
+}
+
+async function markInvoiceUnpaid(id){
+  const inv = invoices.find(i=>i.id===id);
+  if (!inv) return;
+  inv.paid = false; inv.paid_date = null;
+  closePaidArchive(); renderPayup();
+  try { await sb.from('invoices').update({ paid:false, paid_date:null }).eq('id', id); }
+  catch(e){ console.error(e); }
+}
+
+// ── Add invoice sheet ────────────────────────────────────────────────────────
+function openInvoiceAdd(){
+  document.getElementById('inv_client').value = '';
+  document.getElementById('inv_amount').value = '';
+  document.getElementById('inv_num').value = '';
+  document.getElementById('inv_date').value = new Date().toISOString().slice(0,10);
+  document.getElementById('inv_notes').value = '';
+  document.getElementById('invoiceAddModal').classList.add('open');
+  document.body.classList.add('modal-open');
+}
+function closeInvoiceAdd(){
+  document.getElementById('invoiceAddModal').classList.remove('open');
+  document.body.classList.remove('modal-open');
+}
+async function saveInvoice(){
+  const client = document.getElementById('inv_client').value.trim();
+  const amount = parseFloat(document.getElementById('inv_amount').value);
+  if (!client){ showToast('⚠ client name required'); return; }
+  if (!amount || amount<=0){ showToast('⚠ enter an amount'); return; }
+  const row = {
+    id: 'inv_' + Date.now().toString(36) + Math.random().toString(36).slice(2,6),
+    client,
+    num: document.getElementById('inv_num').value.trim() || null,
+    amount,
+    date_sent: document.getElementById('inv_date').value || new Date().toISOString().slice(0,10),
+    notes: document.getElementById('inv_notes').value.trim() || null,
+    paid: false, paid_date: null,
+    created_at: Date.now()
+  };
+  invoices.push(row);
+  closeInvoiceAdd();
+  renderPayup();
+  showToast('invoice added');
+  try { await sb.from('invoices').upsert(row, { onConflict:'id' }); }
+  catch(e){ console.error(e); showToast('⚠ could not save'); }
+}
+
+// ── Detail sheet ─────────────────────────────────────────────────────────────
+let _detailInvoiceId = null;
+function openInvoiceDetail(id){
+  const inv = invoices.find(i=>i.id===id);
+  if (!inv) return;
+  _detailInvoiceId = id;
+  const days = invoiceDays(inv);
+  const st = rotStage(days);
+  document.getElementById('invDetailTitle').textContent = inv.client || '—';
+  document.getElementById('invDetailBody').innerHTML =
+    `<div class="inv-detail-amt">${money(inv.amount)}</div>
+     <div class="inv-detail-rows">
+       <div class="idr"><span>Status</span><b style="color:${st.color}">${st.label}</b></div>
+       <div class="idr"><span>Days outstanding</span><b>${days}d</b></div>
+       <div class="idr"><span>Sent</span><b>${esc(inv.date_sent||'—')}</b></div>
+       ${inv.num ? `<div class="idr"><span>Invoice #</span><b>${esc(inv.num)}</b></div>` : ''}
+     </div>
+     <div class="field" style="margin-top:14px">
+       <label>Notes</label>
+       <textarea id="inv_detail_notes" placeholder="Add a note...">${esc(inv.notes||'')}</textarea>
+     </div>`;
+  document.getElementById('invoiceDetailModal').classList.add('open');
+  document.body.classList.add('modal-open');
+}
+function closeInvoiceDetail(){
+  document.getElementById('invoiceDetailModal').classList.remove('open');
+  document.body.classList.remove('modal-open');
+  _detailInvoiceId = null;
+}
+async function saveInvoiceNote(){
+  const inv = invoices.find(i=>i.id===_detailInvoiceId);
+  if (!inv) return;
+  const notes = document.getElementById('inv_detail_notes').value.trim();
+  inv.notes = notes || null;
+  closeInvoiceDetail(); renderPayup();
+  try { await sb.from('invoices').update({ notes: inv.notes }).eq('id', inv.id); }
+  catch(e){ console.error(e); }
+}
+async function markDetailPaid(){
+  if (_detailInvoiceId){ const id=_detailInvoiceId; closeInvoiceDetail(); markInvoicePaid(id); }
+}
+async function deleteInvoice(){
+  const inv = invoices.find(i=>i.id===_detailInvoiceId);
+  if (!inv) return;
+  if (!confirm(`Delete invoice for "${inv.client}"? This can't be undone.`)) return;
+  const id = inv.id;
+  invoices = invoices.filter(i=>i.id!==id);
+  closeInvoiceDetail(); renderPayup();
+  try { await sb.from('invoices').delete().eq('id', id); }
+  catch(e){ console.error(e); }
+}
+
+// ── Paid archive ─────────────────────────────────────────────────────────────
+function openPaidArchive(){
+  const paid = invoices.filter(i=>i.paid).sort((a,b)=>(b.paid_date||'').localeCompare(a.paid_date||''));
+  const total = paid.reduce((s,i)=>s+Number(i.amount||0),0);
+  const body = document.getElementById('paidArchiveBody');
+  if (!paid.length){
+    body.innerHTML = `<div class="pu-empty"><div class="pu-empty-emoji">📁</div>no paid invoices yet</div>`;
+  } else {
+    body.innerHTML =
+      `<div class="paid-total">${money(total)} collected · ${paid.length} invoices</div>` +
+      paid.map(inv => `<div class="paid-card" onclick="markInvoiceUnpaid('${inv.id}')">
+        <div class="paid-top"><span class="paid-client">${esc(inv.client||'—')}</span><span class="paid-amt">${money(inv.amount)}</span></div>
+        <div class="paid-meta">${inv.num?('#'+esc(inv.num)+' · '):''}sent ${esc(inv.date_sent||'—')}${inv.paid_date?(' · paid '+esc(inv.paid_date)):''}</div>
+        <div class="paid-undo">tap to move back to open</div>
+      </div>`).join('');
+  }
+  document.getElementById('paidArchiveModal').classList.add('open');
+  document.body.classList.add('modal-open');
+}
+function closePaidArchive(){
+  document.getElementById('paidArchiveModal').classList.remove('open');
+  document.body.classList.remove('modal-open');
+}
+
 load();
 tickStreak();
 loadGame();
-loadLog();
+loadInvoices();
 setTimeout(maybeShowRecap, 1500);
 
 // Restore last view (default Today)
@@ -3849,14 +4306,7 @@ if (window.innerWidth <= 768) {
   })();
 
 
-const outreachCb = document.getElementById('f_outreach');
-const track = document.getElementById('toggle_track');
-const thumb = document.getElementById('toggle_thumb');
-function updateToggleUI(checked) {
-  track.style.background = checked ? '#29ABE2' : '#333';
-  thumb.style.transform = checked ? 'translateX(20px)' : 'translateX(0)';
-}
-outreachCb.addEventListener('change', () => updateToggleUI(outreachCb.checked));
+
 
 // Close modals on bg click
 document.getElementById('editModal').addEventListener('click', function(e) {
