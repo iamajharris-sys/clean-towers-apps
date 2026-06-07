@@ -204,6 +204,8 @@
   #todayContent.page-fade { animation: pageFadeIn 0.9s ease forwards; }
   #todayContent.page-shown { opacity: 1; }
   @keyframes pageFadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+  /* Reusable fade-in for Board / Pay Up when tabbing into them */
+  .view-fade-in { animation: pageFadeIn 0.9s ease both; }
   .dash-stats { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; margin-bottom: 20px; }
   .dash-stat {
     background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
@@ -568,14 +570,14 @@
   .btn-scan:hover { background: rgba(41,171,226,0.18); color: var(--sky); }
 
   .btn-add {
-    background: var(--sky);
-    border: none;
+    background: var(--sky-dim);
+    border: 1px solid var(--sky);
     border-radius: 20px;
-    color: #000;
+    color: var(--text);
     font-family: 'Inter', sans-serif;
-    font-weight: 700;
-    font-size: 13px;
-    padding: 8px 14px;
+    font-weight: 500;
+    font-size: 15px;
+    padding: 10px 18px;
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -584,7 +586,7 @@
     flex-shrink: 0;
   }
 
-  .btn-add:hover { background: #1d96cc; }
+  .btn-add:hover { background: rgba(41,171,226,0.18); color: var(--sky); }
 
   /* STATS BAR */
   .stats-bar {
@@ -1440,7 +1442,7 @@
     .search-wrap input { width: 100%; font-size: 12px; }
     .search-wrap input:focus { width: 100%; }
     .btn-scan { padding: 7px 10px; font-size: 12px; }
-    .btn-add { padding: 7px 12px; font-size: 12px; }
+    .btn-add { padding: 8px 14px; font-size: 13px; }
     .btn-icon { width: 32px; height: 32px; }
 
     /* Stats bar — horizontal scroll, compact */
@@ -1561,19 +1563,22 @@
   #view-payup { padding: 16px; max-width: 760px; margin: 0 auto; }
   .payup-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
   .payup-stats { display: flex; gap: 22px; }
-  .pu-stat-num { font-size: 22px; font-weight: 800; color: var(--navy); letter-spacing: -0.02em; }
+  .pu-stat-num { font-size: 22px; font-weight: 800; color: #1e9e54; letter-spacing: -0.02em; }
   .pu-stat-lbl { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); margin-top: 2px; }
   .payup-actions { display: flex; gap: 8px; }
-  .payup-btn-add {
-    background: var(--sky); border: 2px solid var(--navy); border-radius: 20px; color: #fff;
-    font-family: 'Inter', sans-serif; font-weight: 700; font-size: 14px; padding: 9px 18px; cursor: pointer; transition: all 0.2s;
+  .payup-btn-add, .payup-btn-archive {
+    background: #eef1f5;
+    color: var(--navy);
+    border: 2px solid var(--border-bright);
+    border-radius: 12px;
+    box-shadow: 0 1px 2px rgba(16,24,40,0.04);
+    font-family: 'Inter', sans-serif; font-weight: 600; font-size: 14px;
+    padding: 13px 18px; cursor: pointer; -webkit-tap-highlight-color: transparent;
+    transition: transform 0.18s cubic-bezier(0.2,0.8,0.3,1), background 0.18s ease, border-color 0.18s ease;
   }
-  .payup-btn-add:hover { background: #1d96cc; }
-  .payup-btn-archive {
-    background: #eef1f5; border: 1px solid var(--border-bright); border-radius: 20px; color: var(--text);
-    font-family: 'Inter', sans-serif; font-weight: 600; font-size: 14px; padding: 9px 14px; cursor: pointer; transition: all 0.2s;
-  }
-  .payup-btn-archive:hover { background: #e3e8ef; }
+  .payup-btn-add:hover, .payup-btn-archive:hover { background: #e6eaf0; border-color: #c1c8d4; }
+  .payup-btn-add:active, .payup-btn-archive:active { transform: scale(0.97); background: #dfe3ea; }
+  .payup-btn-paid-footer { display: block; width: 100%; margin-top: 16px; }
   .payup-filters { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 6px; margin-bottom: 12px; -webkit-overflow-scrolling: touch; }
   .pf-chip {
     flex-shrink: 0; background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
@@ -1588,27 +1593,68 @@
     display: flex; align-items: center; padding-left: 22px;
     color: #fff; font-weight: 800; font-size: 15px; letter-spacing: 0.04em;
   }
+  .pu-swipe-bg span { opacity: 0; transition: opacity 0.12s; }
+  /* Inline "Paid?" confirmation that slides in once a row is fully pulled over */
+  .pu-confirm {
+    position: absolute; inset: 0; z-index: 5;
+    background: #2ecc71; border-radius: 14px;
+    display: none; align-items: center; justify-content: space-between;
+    padding: 0 18px; color: #fff;
+    animation: puConfirmIn 0.28s cubic-bezier(0.34,1.56,0.64,1);
+  }
+  .pu-confirm.show { display: flex; }
+  @keyframes puConfirmIn { from { opacity: 0; transform: scale(0.97); } to { opacity: 1; transform: scale(1); } }
+  .pu-confirm-label { font-weight: 800; font-size: 17px; letter-spacing: 0.02em; }
+  .pu-confirm-btns { display: flex; gap: 8px; }
+  .pu-confirm-btn {
+    border: none; border-radius: 10px; padding: 9px 18px;
+    font-family: 'Inter', sans-serif; font-size: 14px; font-weight: 700;
+    cursor: pointer; -webkit-tap-highlight-color: transparent;
+    transition: transform 0.12s, opacity 0.12s;
+  }
+  .pu-confirm-btn:active { transform: scale(0.94); opacity: 0.85; }
+  .pu-confirm-yes { background: #fff; color: #1e9e54; }
+  .pu-confirm-no  { background: rgba(255,255,255,0.22); color: #fff; }
   .pu-card {
     position: relative; background: var(--card); border: 1px solid var(--border); border-radius: 14px;
-    box-shadow: var(--shadow); overflow: hidden; touch-action: pan-y; will-change: transform; cursor: grab;
-    transition: border-color 0.15s, box-shadow 0.15s;
+    box-shadow: var(--shadow); overflow: hidden; touch-action: pan-y; cursor: grab;
+    transition: border-color 0.15s, box-shadow 0.15s, background 0.15s, transform 0.15s;
   }
-  .pu-card:hover { border-color: var(--border-bright); box-shadow: var(--shadow-lg); }
-  .pu-accent { position: absolute; left: 0; top: 0; bottom: 0; width: 4px; border-radius: 14px 0 0 14px; }
+  @media (hover: hover) {
+    .pu-card:hover {
+      background: var(--card-hover);
+      border-color: var(--border-bright);
+      box-shadow: var(--shadow-lg);
+    }
+    .pu-card:hover .pu-amount { color: var(--text-muted); }
+    .pu-card:hover .pu-client { color: var(--text); }
+  }
+  .pu-accent { position: absolute; left: 0; top: 0; bottom: 0; width: 7px; border-radius: 14px 0 0 14px; }
   .pu-card-body { padding: 13px 16px 13px 18px; }
-  .pu-amount { font-size: 24px; font-weight: 800; color: #1e9e54; letter-spacing: -0.02em; line-height: 1.05; }
-  .pu-client { font-size: 13px; font-weight: 600; color: var(--text-muted); margin-top: 3px; }
+  .pu-amount { font-size: 19px; font-weight: 800; color: var(--navy); letter-spacing: -0.02em; line-height: 1.05; transition: color 0.15s; }
+  .pu-client { font-size: 13px; font-weight: 600; color: var(--text-muted); margin-top: 3px; transition: color 0.15s; }
   .pu-num { color: var(--text-dim); font-weight: 500; }
   .pu-card-meta { display: flex; align-items: center; gap: 8px; margin-top: 9px; flex-wrap: wrap; }
   .pu-badge { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; padding: 2px 8px; border-radius: 5px; border: 1px solid; }
   .pu-days { font-size: 12px; color: var(--text-muted); }
+  .pu-partial { font-size: 11px; font-weight: 700; color: #1e9e54; background: #2ecc7114; border: 1px solid #2ecc7155; padding: 2px 8px; border-radius: 5px; }
   .pu-note { font-size: 12px; color: var(--text-muted); margin-top: 9px; padding-top: 9px; border-top: 1px solid var(--border); }
-  .pu-rotbar { height: 4px; width: 100%; background: var(--border); }
+  .pu-rotbar { height: 7px; width: 100%; background: var(--border); border-radius: 0 0 13px 13px; overflow: hidden; }
   .pu-rotbar-fill { height: 100%; transition: width 0.3s ease; }
   .pu-empty { text-align: center; padding: 40px 16px; color: var(--text-dim); font-size: 14px; }
   .pu-empty-emoji { font-size: 40px; margin-bottom: 10px; }
 
   .inv-detail-amt { font-size: 34px; font-weight: 800; color: var(--navy); text-align: center; margin: 4px 0 16px; letter-spacing: -0.02em; }
+  .idr-orig { font-size: 16px; font-weight: 600; color: var(--text-dim); }
+  .inv-partial-row { display: flex; gap: 8px; }
+  .inv-partial-row input {
+    flex: 0 0 130px; box-sizing: border-box; padding: 13px 14px;
+    border: 1px solid var(--border); border-radius: 12px;
+    font-size: 16px; font-family: 'Inter', sans-serif; background: #fff; color: var(--text); outline: none;
+  }
+  .inv-partial-row input:focus { border-color: var(--sky); }
+  .inv-partial-btn { flex: 1; background: #eef1f5 !important; color: var(--navy) !important; border: 2px solid var(--border-bright) !important; box-shadow: none !important; font-weight: 600; }
+  .inv-partial-btn:hover { background: #e6eaf0 !important; }
   .inv-detail-rows { display: flex; flex-direction: column; gap: 0; }
   .idr { display: flex; justify-content: space-between; align-items: center; padding: 11px 0; border-bottom: 1px solid var(--border); font-size: 14px; }
   .idr:last-child { border-bottom: none; }
@@ -1627,8 +1673,8 @@
   @media (max-width: 768px){
     .payup-head { flex-direction: column; align-items: stretch; }
     .payup-stats { justify-content: space-between; gap: 8px; }
-    .payup-actions { justify-content: space-between; }
-    .payup-btn-add, .payup-btn-archive { flex: 1; }
+    .payup-actions { justify-content: space-between; flex-wrap: wrap; }
+    .payup-btn-add, .payup-btn-archive { flex: 1 1 auto; padding: 11px 12px; }
   }
 </style>
 
@@ -1698,8 +1744,8 @@
     <div class="payup-stats" id="payupStats"></div>
     <div class="payup-actions">
       <button class="payup-btn-add" onclick="openInvoiceBuilder()">📄 build invoice</button>
-      <button class="payup-btn-add" onclick="openInvoiceAdd()" style="background:#3a3f47">+ track</button>
-      <button class="payup-btn-archive" onclick="openPaidArchive()">📁 paid</button>
+      <button class="payup-btn-add" onclick="sendInvoiceEmail()">✉️ send invoice</button>
+      <button class="payup-btn-add" onclick="openInvoiceAdd()">+ track</button>
     </div>
   </div>
   <div class="payup-filters" id="payupFilters">
@@ -1710,6 +1756,7 @@
     <button class="pf-chip" data-filter="rotted" onclick="setInvoiceFilter('rotted')">Rotted</button>
   </div>
   <div class="payup-list" id="payupList"></div>
+  <button class="payup-btn-archive payup-btn-paid-footer" onclick="openPaidArchive()">📁 paid</button>
 </div>
 
 <!-- ADD/EDIT BOTTOM SHEET -->
@@ -1945,12 +1992,20 @@
         </div>
       </div>
 
+      <label style="display:flex;align-items:center;gap:8px;margin:16px 0 4px;cursor:pointer;font-size:13px;font-weight:700;color:var(--sky)">
+        <input type="checkbox" id="ib_custom_only" onchange="ibCustomOnly()" style="width:16px;height:16px;accent-color:var(--sky)">
+        custom job only (no window cleaning)
+      </label>
+
+      <div id="ib_l1_block">
       <div class="bid-field-label" style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin:14px 0 6px">line 1 — exterior window cleaning</div>
       <div class="field-row">
         <div class="field"><label>Qty</label><input type="number" id="ib_q1" value="1" inputmode="numeric"></div>
         <div class="field"><label>Price ($)</label><input type="number" id="ib_p1" placeholder="4100" inputmode="decimal"></div>
       </div>
+      </div>
 
+      <div id="ib_l2_block">
       <label style="display:flex;align-items:center;gap:8px;margin:14px 0 6px;cursor:pointer;font-size:13px;font-weight:600;color:var(--text)">
         <input type="checkbox" id="ib_l2_on" onchange="ibToggle('ib_l2')" style="width:16px;height:16px;accent-color:var(--sky)">
         monthly ground floor
@@ -1961,11 +2016,13 @@
           <div class="field"><label>Price ($)</label><input type="number" id="ib_p2" placeholder="850" inputmode="decimal"></div>
         </div>
       </div>
+      </div>
 
-      <label style="display:flex;align-items:center;gap:8px;margin:14px 0 6px;cursor:pointer;font-size:13px;font-weight:600;color:var(--text)">
+      <label id="ib_l3_label" style="display:flex;align-items:center;gap:8px;margin:14px 0 6px;cursor:pointer;font-size:13px;font-weight:600;color:var(--text)">
         <input type="checkbox" id="ib_l3_on" onchange="ibToggle('ib_l3')" style="width:16px;height:16px;accent-color:var(--sky)">
         special services (custom)
       </label>
+      <div id="ib_custom_only_label" style="display:none;font-size:11px;font-weight:700;color:var(--sky);text-transform:uppercase;letter-spacing:0.05em;margin:14px 0 6px">custom job</div>
       <div id="ib_l3_fields" style="display:none">
         <div class="field"><label>Description</label><input type="text" id="ib_d3" placeholder="e.g. Pressure wash entry canopy"></div>
         <div class="field-row">
@@ -2000,6 +2057,10 @@
     <div class="modal-body" id="invDetailBody"></div>
     <div class="modal-footer">
       <button class="btn-save-full" onclick="markDetailPaid()" style="background:#2ecc71;border-color:#27ae60">✓ mark paid</button>
+      <div class="inv-partial-row">
+        <input type="number" id="inv_partial_amt" placeholder="partial amount" inputmode="decimal">
+        <button class="btn-save-full inv-partial-btn" onclick="recordPartialPayment()">record partial payment</button>
+      </div>
       <button class="btn-cancel" onclick="saveInvoiceNote()">save note</button>
       <button class="btn-cancel" style="color:#e74c3c;border-color:#e74c3c44" onclick="deleteInvoice()">delete invoice</button>
     </div>
@@ -2621,6 +2682,15 @@ function switchView(v) {
   }
   if (v === 'map') initMap();
   if (v === 'payup') renderPayup();
+  if (v === 'payup') replayFade(document.getElementById('view-payup'));
+}
+
+// Re-trigger the fade-in animation each time a view is shown.
+function replayFade(el){
+  if (!el) return;
+  el.classList.remove('view-fade-in');
+  void el.offsetWidth;            // force reflow so the animation restarts
+  el.classList.add('view-fade-in');
 }
 
 // ── TODAY DASHBOARD ─────────────────────────────────────────────────────────
@@ -4093,15 +4163,67 @@ function esc(s){
 let invoices = [];                 // all invoices (paid + unpaid) from Supabase
 let _invoiceFilter = 'all';
 let _invoicesLoaded = false;
+let _lastInvoiceEmail = '';        // building email from last generated PDF (for "send invoice")
+
+// Remaining balance after any partial payments. Defensive: paid_partial may be
+// null/undefined if the Supabase column doesn't exist yet.
+function invPartial(inv){ return Number(inv && inv.paid_partial || 0); }
+function invBalance(inv){
+  const bal = Number(inv.amount||0) - invPartial(inv);
+  return bal > 0 ? bal : 0;
+}
 
 async function loadInvoices(){
   try {
     const { data, error } = await sb.from('invoices').select('*');
     if (error){ console.error(error); return; }
-    invoices = data || [];
+    const cloud = data || [];
+    // Never clobber local invoices that haven't confirmed their save yet.
+    // Merge: keep every cloud row, then re-add any local row still pending or
+    // not present in the cloud set, so an in-flight/failed save can't vanish.
+    const cloudIds = new Set(cloud.map(r => r.id));
+    const survivors = invoices.filter(r => r && (r._pending || !cloudIds.has(r.id)) && !r._deleted);
+    invoices = cloud.concat(survivors.filter(r => !cloudIds.has(r.id)));
     _invoicesLoaded = true;
+    // Retry any rows that never made it to the cloud.
+    survivors.filter(r => r._pending).forEach(r => persistInvoice(r));
     if (currentView === 'payup') renderPayup();
   } catch(e){ console.error(e); }
+}
+
+// Save (upsert) an invoice and CONFIRM it landed. On failure the row is kept
+// locally and marked _pending so loadInvoices won't drop it and will retry.
+// This is what guarantees a tracked invoice never silently disappears.
+async function persistInvoice(row, successMsg){
+  row._pending = true;
+  const { _pending, _deleted, ...clean } = row;
+  const attempt = async (payload) => sb.from('invoices').upsert(payload, { onConflict:'id' });
+  try {
+    let { error } = await attempt(clean);
+    // Retry without created_at if the DB rejects that specific column.
+    if (error && /created_at/i.test(error.message||'')){
+      const { created_at, ...noCreated } = clean;
+      ({ error } = await attempt(noCreated));
+    }
+    if (error){ throw error; }
+    row._pending = false;
+    if (successMsg) showToast(successMsg);
+  } catch(e){
+    // One automatic retry for transient network failures ("Load failed").
+    try {
+      await new Promise(r => setTimeout(r, 800));
+      const { error } = await attempt(clean);
+      if (error) throw error;
+      row._pending = false;
+      if (successMsg) showToast(successMsg);
+      return;
+    } catch(e2){
+      console.error('invoice save failed:', e2);
+      row._pending = true;          // kept locally + retried on next load
+      const msg = (e2 && e2.message) ? e2.message.slice(0,50) : 'sync failed';
+      showToast('\u26a0 not synced: ' + msg);
+    }
+  }
 }
 
 // Days since the invoice was sent (whole days, >= 0).
@@ -4141,7 +4263,7 @@ function renderPayup(){
   if (!_invoicesLoaded){ loadInvoices(); }
   const open = invoices.filter(i => !i.paid);
   // stats
-  const totalOut = open.reduce((s,i)=>s+Number(i.amount||0),0);
+  const totalOut = open.reduce((s,i)=>s+invBalance(i),0);
   const oldest = open.reduce((m,i)=>Math.max(m, invoiceDays(i)), 0);
   document.getElementById('payupStats').innerHTML =
     `<div class="pu-stat"><div class="pu-stat-num">${money(totalOut)}</div><div class="pu-stat-lbl">outstanding</div></div>
@@ -4165,14 +4287,22 @@ function renderPayup(){
     const pct = rotPct(days);
     return `<div class="pu-row" data-id="${inv.id}">
       <div class="pu-swipe-bg"><span>✓ PAID</span></div>
+      <div class="pu-confirm" data-id="${inv.id}">
+        <span class="pu-confirm-label">Paid?</span>
+        <div class="pu-confirm-btns">
+          <button class="pu-confirm-btn pu-confirm-no" onclick="cancelInvoicePaid('${inv.id}')">No</button>
+          <button class="pu-confirm-btn pu-confirm-yes" onclick="confirmInvoicePaid('${inv.id}')">Yes</button>
+        </div>
+      </div>
       <div class="pu-card" data-id="${inv.id}">
         <div class="pu-accent" style="background:${st.color}"></div>
         <div class="pu-card-body" onclick="openInvoiceDetail('${inv.id}')">
-          <div class="pu-amount">${money(inv.amount)}</div>
+          <div class="pu-amount">${money(invBalance(inv))}</div>
           <div class="pu-client">${esc(inv.client||'—')}${inv.num ? ` · <span class="pu-num">#${esc(inv.num)}</span>` : ''}</div>
           <div class="pu-card-meta">
             <span class="pu-badge" style="color:${st.color};border-color:${st.color}55;background:${st.color}14">${st.label}</span>
             <span class="pu-days">${days}d outstanding</span>
+            ${invPartial(inv) > 0 ? `<span class="pu-partial">${money(invPartial(inv))} paid of ${money(inv.amount)}</span>` : ''}
           </div>
           ${inv.notes ? `<div class="pu-note">${esc(inv.notes)}</div>` : ''}
         </div>
@@ -4184,36 +4314,96 @@ function renderPayup(){
 }
 
 // Swipe-right-to-pay (touch) on each pu-card.
+// Weighted/resistive drag — once pulled far enough, asks "Paid?" before committing.
 function wireInvoiceSwipe(){
   document.querySelectorAll('#payupList .pu-card').forEach(card => {
-    let startX=0, dx=0, dragging=false;
-    const onStart = (x)=>{ startX=x; dragging=true; card.style.transition='none'; };
-    const onMove = (x)=>{
-      if(!dragging) return;
-      dx = Math.max(0, x-startX);              // only allow swipe right
+    const row = card.closest('.pu-row');
+    const bgLabel = row ? row.querySelector('.pu-swipe-bg span') : null;
+    const confirm = row ? row.querySelector('.pu-confirm') : null;
+    // distance the finger must travel to arm the action (higher = less sensitive)
+    const ARM = 200;
+    // resistance: card moves this fraction of finger travel, so it feels heavier
+    const RESIST = 0.42;
+    let startX=0, startY=0, travel=0, dx=0;
+    let dragging=false;      // committed to a horizontal swipe
+    let deciding=false;      // finger down, direction not yet determined
+
+    const onStart = (x,y)=>{
+      if (confirm && confirm.classList.contains('show')) return; // ignore while confirming
+      startX=x; startY=y; deciding=true; dragging=false;
+    };
+    // Returns true if it consumed the move as a horizontal swipe.
+    const onMove = (x,y)=>{
+      if (!deciding && !dragging) return;
+      const adx = Math.abs(x-startX);
+      const ady = Math.abs(y-startY);
+      if (deciding){
+        // Wait for a clear gesture (~8px) before deciding swipe vs scroll.
+        if (adx < 8 && ady < 8) return;
+        if (ady >= adx){
+          // Vertical intent → it's a scroll. Bail out, leave the page alone.
+          deciding=false; dragging=false;
+          return;
+        }
+        // Horizontal intent → begin the swipe.
+        deciding=false; dragging=true;
+        card.style.transition='none';
+        card.style.willChange='transform';
+      }
+      if (!dragging) return;
+      travel = Math.max(0, x-startX);            // raw finger travel, right only
+      dx = travel * RESIST;                      // dampened card movement
       card.style.transform = `translateX(${dx}px)`;
+      if (bgLabel) bgLabel.style.opacity = Math.min(1, travel / ARM).toFixed(2);
     };
     const onEnd = ()=>{
+      deciding=false;
       if(!dragging) return; dragging=false;
-      card.style.transition='transform 0.3s cubic-bezier(0.34,1.56,0.64,1)';
-      if (dx > 120){
-        card.style.transform = `translateX(120%)`;
-        const id = card.dataset.id;
-        setTimeout(()=>markInvoicePaid(id), 220);
+      if (travel >= ARM){
+        // slide the row fully open and ask for confirmation (keep the spring here)
+        card.style.transition='transform 0.32s cubic-bezier(0.34,1.4,0.64,1)';
+        card.style.transform = `translateX(110%)`;
+        if (confirm) setTimeout(()=>confirm.classList.add('show'), 180);
       } else {
+        // decelerate into the resting point and stop — no overshoot/bounce
+        card.style.transition='transform 0.3s cubic-bezier(0.22,0.61,0.36,1)';
         card.style.transform = 'translateX(0)';
+        if (bgLabel) bgLabel.style.opacity = 0;
       }
-      dx=0;
+      // release the GPU layer once the gesture is done
+      setTimeout(()=>{ card.style.willChange='auto'; }, 350);
+      travel=0; dx=0;
     };
-    card.addEventListener('touchstart', e=>onStart(e.touches[0].clientX), {passive:true});
-    card.addEventListener('touchmove',  e=>onMove(e.touches[0].clientX),  {passive:true});
-    card.addEventListener('touchend',   onEnd);
+    card.addEventListener('touchstart', e=>onStart(e.touches[0].clientX, e.touches[0].clientY), {passive:true});
+    card.addEventListener('touchmove',  e=>onMove(e.touches[0].clientX, e.touches[0].clientY),  {passive:true});
+    card.addEventListener('touchend',   onEnd, {passive:true});
+    card.addEventListener('touchcancel', onEnd, {passive:true});
     // mouse (desktop) support
-    card.addEventListener('mousedown', e=>{ onStart(e.clientX); 
-      const mm=ev=>onMove(ev.clientX), mu=()=>{onEnd();document.removeEventListener('mousemove',mm);document.removeEventListener('mouseup',mu);};
+    card.addEventListener('mousedown', e=>{ onStart(e.clientX, e.clientY);
+      const mm=ev=>onMove(ev.clientX, ev.clientY), mu=()=>{onEnd();document.removeEventListener('mousemove',mm);document.removeEventListener('mouseup',mu);};
       document.addEventListener('mousemove',mm); document.addEventListener('mouseup',mu);
     });
   });
+}
+
+// "Yes" on the Paid? prompt — commit the invoice as paid.
+function confirmInvoicePaid(id){
+  markInvoicePaid(id);
+}
+
+// "No" on the Paid? prompt — spring the card back, cancel.
+function cancelInvoicePaid(id){
+  const row = document.querySelector(`#payupList .pu-row[data-id="${id}"]`);
+  if (!row) return;
+  const card = row.querySelector('.pu-card');
+  const confirm = row.querySelector('.pu-confirm');
+  const bgLabel = row.querySelector('.pu-swipe-bg span');
+  if (confirm) confirm.classList.remove('show');
+  if (bgLabel) bgLabel.style.opacity = 0;
+  if (card){
+    card.style.transition='transform 0.3s cubic-bezier(0.22,0.61,0.36,1)';
+    card.style.transform = 'translateX(0)';
+  }
 }
 
 async function markInvoicePaid(id){
@@ -4249,6 +4439,9 @@ function openInvoiceBuilder(){
   document.getElementById('ib_track').checked = true;
   document.getElementById('ib_l2_fields').style.display = 'none';
   document.getElementById('ib_l3_fields').style.display = 'none';
+  // reset custom-job-only mode back to the default layout
+  document.getElementById('ib_custom_only').checked = false;
+  ibCustomOnly();
   // populate building name suggestions from board data
   const dl = document.getElementById('ib_client_list');
   if (dl){
@@ -4268,8 +4461,21 @@ function ibClientPicked(){
   if (!name) return;
   const b = buildings.find(x => (x.name||'').trim().toLowerCase() === name);
   if (!b) return;            // unknown name (new client) — leave fields for manual / Google entry
-  if (b.address) document.getElementById('ib_addr').value = b.address;
+  if (b.address) document.getElementById('ib_addr').value = ibStreetOnly(b.address);
   if (b.city)    document.getElementById('ib_city').value = b.city;
+}
+
+// Stored addresses sometimes carry a leading business name from Google
+// (e.g. "Bridgeview Condominiums at Tempe Town Lake, 140 E Rio Salado Pkwy #406, Tempe...").
+// Keep only from the street number onward so the invoice shows the address once.
+function ibStreetOnly(address){
+  const s = String(address || '').trim();
+  if (!s) return s;
+  const parts = s.split(',').map(p => p.trim()).filter(Boolean);
+  // Find the first comma-segment that begins with a digit — that's the street line.
+  const firstNumIdx = parts.findIndex(p => /^\d/.test(p));
+  if (firstNumIdx > 0) return parts.slice(firstNumIdx).join(', ');
+  return s;   // no leading name to strip (already starts with the street)
 }
 
 // Google Places autocomplete on the address field (lib already loaded for the map)
@@ -4307,31 +4513,76 @@ function ibToggle(prefix){
   document.getElementById(prefix+'_fields').style.display = on ? 'block' : 'none';
 }
 
-function generateInvoicePDF(){
+// "Custom job only" — drop exterior window cleaning + ground floor entirely and
+// invoice only the custom line the user types in.
+function ibCustomOnly(){
+  const on = document.getElementById('ib_custom_only').checked;
+  // Hide/show the window-cleaning line and ground-floor option
+  document.getElementById('ib_l1_block').style.display = on ? 'none' : 'block';
+  document.getElementById('ib_l2_block').style.display = on ? 'none' : 'block';
+  // Swap the special-services checkbox for a plain "custom job" label
+  document.getElementById('ib_l3_label').style.display = on ? 'none' : 'flex';
+  document.getElementById('ib_custom_only_label').style.display = on ? 'block' : 'none';
+  // In custom mode the custom line is always active and shown
+  if (on){
+    document.getElementById('ib_l3_on').checked = true;
+    document.getElementById('ib_l3_fields').style.display = 'block';
+    document.getElementById('ib_l2_on').checked = false;
+    document.getElementById('ib_l2_fields').style.display = 'none';
+  }
+}
+
+// Generate an invoice number that is guaranteed not to collide with any existing
+// invoice (checked against the full loaded set). Format: YYMM + 6 digits.
+function generateUniqueInvoiceNum(){
+  const existing = new Set(invoices.map(i => String(i.num||'')));
+  const d = new Date();
+  const prefix = String(d.getFullYear()).slice(2) + String(d.getMonth()+1).padStart(2,'0');
+  let candidate;
+  let tries = 0;
+  do {
+    candidate = prefix + String(Math.floor(Math.random()*900000)+100000);
+    tries++;
+  } while (existing.has(candidate) && tries < 50);
+  // Extremely unlikely fallback: append a timestamp tail to force uniqueness.
+  if (existing.has(candidate)) candidate = prefix + Date.now().toString().slice(-6);
+  return candidate;
+}
+
+async function generateInvoicePDF(){
   const client = document.getElementById('ib_client').value.trim();
   if (!client){ showToast('\u26a0 client name required'); return; }
+
+  // Remember the building's email so "send invoice" can pre-fill the recipient.
+  const _matchB = buildings.find(x => (x.name||'').trim().toLowerCase() === client.toLowerCase());
+  _lastInvoiceEmail = (_matchB && (_matchB.email||'').trim()) || '';
 
   const money2 = n => n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
   const money0 = n => '$'+Math.round(n).toLocaleString('en-US');
 
   // ── Gather line items ──
+  const customOnly = document.getElementById('ib_custom_only').checked;
   const lines = [];
-  const q1 = parseFloat(document.getElementById('ib_q1').value)||1;
-  const p1 = parseFloat(document.getElementById('ib_p1').value);
-  if (!p1 || p1<=0){ showToast('\u26a0 enter a price for line 1'); return; }
-  lines.push({ svc:'Exterior Window Cleaning', qty:q1, price:p1, total:q1*p1 });
 
-  if (document.getElementById('ib_l2_on').checked){
-    const q2 = parseFloat(document.getElementById('ib_q2').value)||1;
-    const p2 = parseFloat(document.getElementById('ib_p2').value);
-    if (!p2 || p2<=0){ showToast('\u26a0 enter a price for ground floor'); return; }
-    lines.push({ svc:'Monthly Ground Floor', qty:q2, price:p2, total:q2*p2 });
+  if (!customOnly){
+    const q1 = parseFloat(document.getElementById('ib_q1').value)||1;
+    const p1 = parseFloat(document.getElementById('ib_p1').value);
+    if (!p1 || p1<=0){ showToast('\u26a0 enter a price for line 1'); return; }
+    lines.push({ svc:'Exterior Window Cleaning', qty:q1, price:p1, total:q1*p1 });
+
+    if (document.getElementById('ib_l2_on').checked){
+      const q2 = parseFloat(document.getElementById('ib_q2').value)||1;
+      const p2 = parseFloat(document.getElementById('ib_p2').value);
+      if (!p2 || p2<=0){ showToast('\u26a0 enter a price for ground floor'); return; }
+      lines.push({ svc:'Monthly Ground Floor', qty:q2, price:p2, total:q2*p2 });
+    }
   }
-  if (document.getElementById('ib_l3_on').checked){
-    const d3 = document.getElementById('ib_d3').value.trim() || 'Special Services';
+
+  if (customOnly || document.getElementById('ib_l3_on').checked){
+    const d3 = document.getElementById('ib_d3').value.trim() || 'Custom Job';
     const q3 = parseFloat(document.getElementById('ib_q3').value)||1;
     const p3 = parseFloat(document.getElementById('ib_p3').value);
-    if (!p3 || p3<=0){ showToast('\u26a0 enter a price for special services'); return; }
+    if (!p3 || p3<=0){ showToast(customOnly ? '\u26a0 enter a price for the custom job' : '\u26a0 enter a price for special services'); return; }
     lines.push({ svc:d3, qty:q3, price:p3, total:q3*p3 });
   }
   const grand = lines.reduce((s,l)=>s+l.total,0);
@@ -4342,8 +4593,11 @@ function generateInvoicePDF(){
   const terms = document.getElementById('ib_terms').value;
   let invNum = document.getElementById('ib_num').value.trim();
   if (!invNum){
-    const d = new Date();
-    invNum = String(d.getFullYear()).slice(2)+String(d.getMonth()+1).padStart(2,'0')+String(Math.floor(Math.random()*900000)+100000);
+    invNum = generateUniqueInvoiceNum();
+  } else if (invoices.some(i => String(i.num||'') === invNum)){
+    // A manually-typed number that collides with an existing one — warn and stop.
+    showToast('\u26a0 invoice # ' + invNum + ' already exists');
+    return;
   }
   const now = new Date();
   const ord = n => { const s=['th','st','nd','rd'], v=n%100; return n+(s[(v-20)%10]||s[v]||s[0]); };
@@ -4397,24 +4651,27 @@ function generateInvoicePDF(){
   if (n2) doc.text(doc.splitTextToSize(n2, 480)[0], 60, 622);
 
   const safe = (client||'invoice').replace(/[^a-z0-9]+/gi,'_').toLowerCase();
-  doc.save(`clean_towers_invoice_${safe}.pdf`);
 
-  // Optionally add to tracker
+  // Add to tracker and CONFIRM the cloud save BEFORE downloading the PDF.
+  // On mobile, doc.save() can suspend the page and abort an in-flight fetch
+  // ("TypeError: Load failed"), so the network write must complete first.
   if (document.getElementById('ib_track').checked){
     const row = {
       id: 'inv_' + Date.now().toString(36) + Math.random().toString(36).slice(2,6),
       client, num: invNum, amount: grand,
       date_sent: now.toISOString().slice(0,10),
       notes: [n1,n2].filter(Boolean).join(' \u00b7 ') || null,
-      paid:false, paid_date:null, created_at: Date.now()
+      paid:false, paid_date:null
     };
     invoices.push(row);
     renderPayup();
-    sb.from('invoices').upsert(row, { onConflict:'id' }).catch(e=>console.error(e));
-    showToast('\ud83d\udcc4 invoice pdf saved + tracked');
+    await persistInvoice(row, '\ud83d\udcc4 invoice pdf saved + tracked');
   } else {
     showToast('\ud83d\udcc4 invoice pdf saved');
   }
+
+  // Now generate/download the PDF — safe to do after the save has resolved.
+  doc.save(`clean_towers_invoice_${safe}.pdf`);
   closeInvoiceBuilder();
 }
 
@@ -4439,27 +4696,41 @@ function closeInvoiceAdd(){
   document.getElementById('invoiceAddModal').classList.remove('open');
   document.body.classList.remove('modal-open');
 }
+
+// Open the user's mail client with a pre-filled invoice email.
+// Recipient is auto-filled from the last building you generated a PDF for.
+// Note: browsers can't auto-attach a file via mailto — attach the PDF in your mail app.
+function sendInvoiceEmail(){
+  const subject = 'Clean Towers Invoice';
+  const body = 'Please find invoice attached,\n\nwe appreciate you,\n\nsee you down the road \uD83D\uDE42';
+  const to = (_lastInvoiceEmail || '').trim();
+  const url = `mailto:${encodeURIComponent(to)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  window.location.href = url;
+  showToast(to ? '✉️ opening mail — attach your invoice' : '✉️ opening mail — add recipient + attach pdf');
+}
 async function saveInvoice(){
   const client = document.getElementById('inv_client').value.trim();
   const amount = parseFloat(document.getElementById('inv_amount').value);
   if (!client){ showToast('⚠ client name required'); return; }
   if (!amount || amount<=0){ showToast('⚠ enter an amount'); return; }
+  let num = document.getElementById('inv_num').value.trim();
+  if (num && invoices.some(i => String(i.num||'') === num)){
+    showToast('\u26a0 invoice # ' + num + ' already exists');
+    return;
+  }
   const row = {
     id: 'inv_' + Date.now().toString(36) + Math.random().toString(36).slice(2,6),
     client,
-    num: document.getElementById('inv_num').value.trim() || null,
+    num: num || null,
     amount,
     date_sent: document.getElementById('inv_date').value || new Date().toISOString().slice(0,10),
     notes: document.getElementById('inv_notes').value.trim() || null,
-    paid: false, paid_date: null,
-    created_at: Date.now()
+    paid: false, paid_date: null
   };
   invoices.push(row);
   closeInvoiceAdd();
   renderPayup();
-  showToast('invoice added');
-  try { await sb.from('invoices').upsert(row, { onConflict:'id' }); }
-  catch(e){ console.error(e); showToast('⚠ could not save'); }
+  persistInvoice(row, 'invoice added');
 }
 
 // ── Detail sheet ─────────────────────────────────────────────────────────────
@@ -4472,12 +4743,13 @@ function openInvoiceDetail(id){
   const st = rotStage(days);
   document.getElementById('invDetailTitle').textContent = inv.client || '—';
   document.getElementById('invDetailBody').innerHTML =
-    `<div class="inv-detail-amt">${money(inv.amount)}</div>
+    `<div class="inv-detail-amt">${money(invBalance(inv))}${invPartial(inv) > 0 ? ` <span class="idr-orig">of ${money(inv.amount)}</span>` : ''}</div>
      <div class="inv-detail-rows">
        <div class="idr"><span>Status</span><b style="color:${st.color}">${st.label}</b></div>
        <div class="idr"><span>Days outstanding</span><b>${days}d</b></div>
        <div class="idr"><span>Sent</span><b>${esc(inv.date_sent||'—')}</b></div>
        ${inv.num ? `<div class="idr"><span>Invoice #</span><b>${esc(inv.num)}</b></div>` : ''}
+       ${invPartial(inv) > 0 ? `<div class="idr"><span>Partially paid</span><b style="color:#1e9e54">${money(invPartial(inv))}</b></div>` : ''}
      </div>
      <div class="field" style="margin-top:14px">
        <label>Notes</label>
@@ -4500,6 +4772,28 @@ async function saveInvoiceNote(){
   try { await sb.from('invoices').update({ notes: inv.notes }).eq('id', inv.id); }
   catch(e){ console.error(e); }
 }
+async function recordPartialPayment(){
+  const inv = invoices.find(i=>i.id===_detailInvoiceId);
+  if (!inv) return;
+  const input = document.getElementById('inv_partial_amt');
+  const add = parseFloat(input.value);
+  if (!add || add <= 0){ showToast('⚠ enter an amount'); return; }
+  const newPartial = invPartial(inv) + add;
+  inv.paid_partial = newPartial;
+  // If the partial payments cover the full amount, mark it fully paid.
+  const fullyPaid = newPartial >= Number(inv.amount||0);
+  if (fullyPaid){
+    const today = new Date().toISOString().slice(0,10);
+    inv.paid = true; inv.paid_date = today;
+  }
+  closeInvoiceDetail(); renderPayup();
+  showToast(fullyPaid ? '✓ paid in full' : `✓ ${money(add)} recorded`);
+  try {
+    const upd = { paid_partial: newPartial };
+    if (fullyPaid){ upd.paid = true; upd.paid_date = inv.paid_date; }
+    await sb.from('invoices').update(upd).eq('id', inv.id);
+  } catch(e){ console.error(e); showToast('⚠ could not save'); }
+}
 async function markDetailPaid(){
   if (_detailInvoiceId){ const id=_detailInvoiceId; closeInvoiceDetail(); markInvoicePaid(id); }
 }
@@ -4510,8 +4804,15 @@ async function deleteInvoice(){
   const id = inv.id;
   invoices = invoices.filter(i=>i.id!==id);
   closeInvoiceDetail(); renderPayup();
-  try { await sb.from('invoices').delete().eq('id', id); }
-  catch(e){ console.error(e); }
+  try {
+    const { error } = await sb.from('invoices').delete().eq('id', id);
+    if (error) throw error;
+  } catch(e){
+    console.error(e);
+    showToast('\u26a0 could not delete — restoring');
+    // Put it back so a failed delete doesn't look like it vanished.
+    if (!invoices.some(i=>i.id===id)){ invoices.push(inv); renderPayup(); }
+  }
 }
 
 // ── Paid archive ─────────────────────────────────────────────────────────────
