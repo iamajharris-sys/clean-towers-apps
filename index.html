@@ -2203,6 +2203,32 @@ function bumpObjective(field){
   renderToday();
 }
 
+// Contacts logged by the field loggers (Megan/Alex) during the current week.
+// Sourced from the shared logger_earnings table so their work counts toward the
+// weekly "new contacts" objective alongside contacts added here in the CRM.
+let _loggerContactsThisWeek = 0;
+// The Phoenix YYYY-MM-DD strings for Mon..today of the current week.
+function currentWeekDayKeys(){
+  const fmt = d => new Intl.DateTimeFormat('en-CA', { timeZone:'America/Phoenix', year:'numeric', month:'2-digit', day:'2-digit' }).format(d);
+  const now = new Date();
+  // Phoenix offset is fixed UTC-7 (no DST); compute Monday of this week.
+  const day = (now.getDay() + 6) % 7;       // Mon=0 … Sun=6 (local, close enough for day keys)
+  const keys = [];
+  for (let i = day; i >= 0; i--){
+    keys.push(fmt(new Date(now.getTime() - i*86400000)));
+  }
+  return keys;
+}
+async function loadLoggerContacts(){
+  try {
+    const days = currentWeekDayKeys();
+    const { data, error } = await sb.from('logger_earnings')
+      .select('id,kind,day').eq('kind','contact').in('day', days);
+    if (error){ console.error(error); return; }
+    _loggerContactsThisWeek = (data || []).length;
+  } catch(e){ console.error(e); }
+}
+
 // ── ACTIVITY LOG (for weekly recap) ─────────────────────────────────────────
 let activityLog = [];
 function loadLog(){
@@ -2625,6 +2651,9 @@ async function load() {
       render();
     }
   } catch(e) { /* offline: keep local */ }
+  // Pull this week's logger-added contacts so the weekly objective reflects them.
+  await loadLoggerContacts();
+  renderToday();
 }
 
 function uid() {
@@ -2679,6 +2708,8 @@ function switchView(v) {
     // after the initial fade has played, returning to Today should be instantly visible
     const tc=document.getElementById('todayContent');
     if (tc && _todayFaded) tc.classList.add('page-shown');
+    // refresh the loggers' contact count for the objective, then re-render
+    loadLoggerContacts().then(renderToday);
   }
   if (v === 'map') initMap();
   if (v === 'payup') renderPayup();
@@ -2774,9 +2805,10 @@ function renderToday() {
 
     ${(()=>{
       const obj = getObjective();
+      const totalContacts = obj.contacts + _loggerContactsThisWeek;
       const emPct = Math.min(100, Math.round((obj.emails/GOAL_EMAILS)*100));
-      const coPct = Math.min(100, Math.round((obj.contacts/GOAL_CONTACTS)*100));
-      const emDone = obj.emails>=GOAL_EMAILS, coDone = obj.contacts>=GOAL_CONTACTS;
+      const coPct = Math.min(100, Math.round((totalContacts/GOAL_CONTACTS)*100));
+      const emDone = obj.emails>=GOAL_EMAILS, coDone = totalContacts>=GOAL_CONTACTS;
       return `
       <div class="objective-card">
         <div class="obj-title">🎯 weekly objective</div>
@@ -2790,7 +2822,7 @@ function renderToday() {
         <div class="obj-row">
           <div class="obj-row-top">
             <span class="obj-label">🤝 new contacts${coDone?' ✓':''}</span>
-            <span class="obj-count">${obj.contacts}/${GOAL_CONTACTS}</span>
+            <span class="obj-count">${totalContacts}/${GOAL_CONTACTS}</span>
           </div>
           <div class="obj-bar"><div class="obj-bar-fill${coDone?' done':''}" style="width:${coPct}%"></div></div>
         </div>
