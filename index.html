@@ -2249,7 +2249,10 @@
 <div class="view" id="view-ongoing" style="display:none">
   <div class="ongoing-head">
     <div class="ongoing-stats" id="ongoingStats"></div>
-    <button class="og-start-btn" onclick="ogStartProject()">＋ new project</button>
+    <div style="display:flex;gap:8px">
+      <button class="og-start-btn" onclick="ogStartProject()" title="new project">＋</button>
+      <button class="og-start-btn" onclick="jdOpen()" style="background:var(--sky)">📸 job drop</button>
+    </div>
   </div>
   <div class="ongoing-list" id="ongoingList"></div>
 </div>
@@ -6089,3 +6092,176 @@ setTimeout(function() {
   if (s) s.remove();
 }, 2500);
 </script>
+
+<!-- ============ JOB DROP: field photos -> location pages ============ -->
+<style>
+#jdOverlay{position:fixed;inset:0;background:var(--bg);z-index:9000;display:none;flex-direction:column;overflow-y:auto;-webkit-overflow-scrolling:touch}
+#jdOverlay.on{display:flex}
+.jd-head{display:flex;align-items:center;justify-content:space-between;padding:calc(14px + env(safe-area-inset-top)) 16px 12px;background:var(--surface);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:2}
+.jd-head h2{font-size:17px;font-weight:700;color:var(--text);letter-spacing:-.3px}
+.jd-head .jd-sub{font-size:11px;color:var(--text-muted);margin-top:2px}
+.jd-x{background:none;border:1px solid var(--border);border-radius:9px;padding:7px 13px;font-family:inherit;font-size:13px;color:var(--text-muted);cursor:pointer}
+.jd-body{padding:16px;max-width:560px;width:100%;margin:0 auto;flex:1}
+.jd-chip{display:inline-block;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-muted);border:1px solid var(--border);border-radius:6px;padding:4px 8px;margin-bottom:12px;background:var(--surface)}
+.jd-area,.jd-slot{width:100%;text-align:left;background:var(--surface);border:1px solid var(--border);border-radius:13px;padding:15px;margin-bottom:9px;font-family:inherit;cursor:pointer;box-shadow:var(--shadow)}
+.jd-area{font-size:16px;font-weight:600;color:var(--text);display:flex;justify-content:space-between;align-items:center}
+.jd-area small{color:var(--text-dim);font-weight:400}
+.jd-area:active,.jd-slot:active{border-color:var(--sky)}
+.jd-slot{display:flex;gap:11px;align-items:center}
+.jd-slot .th{width:60px;height:44px;border-radius:7px;background:var(--card-hover);flex:none;overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:9px;color:var(--text-dim)}
+.jd-slot .th img{width:100%;height:100%;object-fit:cover}
+.jd-slot .in{min-width:0;flex:1}
+.jd-slot .t{font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.jd-slot .d{font-size:11px;color:var(--text-muted);margin-top:2px}
+.jd-slot .tag{flex:none;font-size:9px;letter-spacing:.06em;text-transform:uppercase;padding:3px 7px;border-radius:5px;border:1px solid var(--border);color:var(--text-dim)}
+.jd-slot .tag.live{color:var(--sky);border-color:var(--sky-dim);background:var(--sky-glow)}
+.jd-pick{width:100%;aspect-ratio:16/10;border:1.5px dashed var(--border-bright);border-radius:13px;background:var(--surface);display:flex;align-items:center;justify-content:center;color:var(--text-muted);font-size:13px;cursor:pointer;overflow:hidden;position:relative;margin-bottom:4px}
+.jd-pick img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.jd-pick .hint{position:relative;z-index:1;background:rgba(26,34,48,.75);color:#fff;padding:6px 12px;border-radius:8px;font-size:12px}
+.jd-label{display:block;font-size:11px;color:var(--text-muted);margin:14px 0 5px;font-weight:600}
+.jd-input,.jd-ta{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:11px;color:var(--text);font-family:inherit;font-size:16px;padding:12px 14px;outline:none;box-sizing:border-box}
+.jd-input:focus,.jd-ta:focus{border-color:var(--sky)}
+.jd-ta{resize:none;min-height:76px;line-height:1.4}
+.jd-send{width:100%;background:var(--sky);color:#fff;border:none;border-radius:11px;padding:15px;font-size:15px;font-weight:700;font-family:inherit;margin-top:16px;cursor:pointer}
+.jd-send:disabled{opacity:.4}
+.jd-status{font-size:12px;color:var(--text-muted);text-align:center;margin-top:10px;min-height:16px}
+.jd-status.err{color:var(--red)}
+.jd-done{text-align:center;padding:44px 0}
+.jd-done .big{font-size:42px}
+.jd-done .t{font-size:18px;font-weight:700;color:var(--text);margin-top:8px}
+.jd-done .s{font-size:12px;color:var(--text-muted);margin-top:5px}
+.jd-done a{display:block;color:var(--sky);font-size:13px;font-weight:600;margin-top:16px;text-decoration:none}
+.jd-ghost{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:11px;padding:13px;font-size:14px;font-family:inherit;color:var(--text-muted);margin-top:12px;cursor:pointer}
+</style>
+<div id="jdOverlay">
+  <div class="jd-head">
+    <div><h2>📸 job drop</h2><div class="jd-sub">field photos → location pages</div></div>
+    <button class="jd-x" onclick="jdBack()">back</button>
+  </div>
+  <div class="jd-body" id="jdBody"></div>
+</div>
+<script>
+/* ===== JOB DROP ===== */
+const JD_AREAS=[
+  {slug:'phoenix',name:'Phoenix'},
+  {slug:'scottsdale',name:'Scottsdale'},
+  {slug:'tempe',name:'Tempe'},
+  {slug:'downtown-phoenix',name:'Downtown Phoenix'},
+  {slug:'camelback-corridor',name:'Camelback Corridor'}
+];
+const JD_SLOTS=[
+  {n:1,shape:'wide / tall',ph:'Rope access — high-rise exterior'},
+  {n:2,shape:'small',ph:'Water-fed pole — mid-rise glass'},
+  {n:3,shape:'small',ph:'Swing stage — commercial tower'},
+  {n:4,shape:'wide / tall',ph:'Restoration — post-monsoon detail'}
+];
+let jdArea=null,jdSlot=null,jdBlob=null,jdExisting={},jdScreen='areas';
+
+function jdOpen(){document.getElementById('jdOverlay').classList.add('on');jdAreas();}
+function jdClose(){document.getElementById('jdOverlay').classList.remove('on');}
+function jdBack(){
+  if(jdScreen==='form')jdShowSlots();
+  else if(jdScreen==='slots'||jdScreen==='done')jdAreas();
+  else jdClose();
+}
+function jdAreas(){
+  jdScreen='areas';
+  document.getElementById('jdBody').innerHTML=
+    '<div class="jd-chip">step 1 — where were you</div>'+
+    JD_AREAS.map(a=>'<button class="jd-area" onclick="jdPickArea(\''+a.slug+'\')"><span>'+a.name+'</span><small>→</small></button>').join('');
+}
+async function jdPickArea(slug){
+  jdArea=JD_AREAS.find(a=>a.slug===slug);
+  jdScreen='slots';
+  const b=document.getElementById('jdBody');
+  b.innerHTML='<div class="jd-chip">'+jdArea.name.toLowerCase()+' — pick the frame</div><div class="jd-status">loading current frames…</div>';
+  jdExisting={};
+  try{
+    const{data}=await sb.from('projects').select('slot,title,photo_url,taken_at').eq('area',slug);
+    (data||[]).forEach(p=>jdExisting[p.slot]=p);
+  }catch(e){}
+  jdShowSlots();
+}
+function jdShowSlots(){
+  jdScreen='slots';
+  const b=document.getElementById('jdBody');
+  b.innerHTML='<div class="jd-chip">'+jdArea.name.toLowerCase()+' — pick the frame to replace</div>'+
+    JD_SLOTS.map(s=>{
+      const ex=jdExisting[s.n];
+      return '<button class="jd-slot" onclick="jdPickSlot('+s.n+')">'+
+        '<div class="th">'+(ex?'<img src="'+ex.photo_url+'">':'no photo')+'</div>'+
+        '<div class="in"><div class="t">'+(ex?jdEsc(ex.title):s.ph)+'</div>'+
+        '<div class="d">frame '+s.n+' · '+s.shape+(ex&&ex.taken_at?' · '+new Date(ex.taken_at).toLocaleDateString('en-US',{month:'short',day:'numeric'}):'')+'</div></div>'+
+        '<span class="tag'+(ex?' live':'')+'">'+(ex?'live':'placeholder')+'</span></button>';
+    }).join('');
+}
+function jdPickSlot(n){
+  jdSlot=JD_SLOTS.find(s=>s.n===n);
+  jdBlob=null;jdScreen='form';
+  const ex=jdExisting[n];
+  document.getElementById('jdBody').innerHTML=
+    '<div class="jd-chip">'+jdArea.name.toLowerCase()+' · frame '+n+'</div>'+
+    '<div class="jd-pick" onclick="document.getElementById(\'jdFile\').click()"><span class="hint" id="jdHint">tap to add photo</span><input type="file" id="jdFile" accept="image/*" hidden></div>'+
+    '<label class="jd-label">project title</label>'+
+    '<input class="jd-input" id="jdTitle" maxlength="70" placeholder="22-story rope drop — Central Ave" value="'+(ex?jdEsc(ex.title):'')+'">'+
+    '<label class="jd-label">small description</label>'+
+    '<textarea class="jd-ta" id="jdDesc" maxlength="180" placeholder="Full exterior descent, post-monsoon mineral treatment on south glass."></textarea>'+
+    '<label class="jd-label">date</label>'+
+    '<input class="jd-input" type="date" id="jdDate" value="'+new Date().toISOString().slice(0,10)+'">'+
+    '<button class="jd-send" id="jdSend" onclick="jdSend()" disabled>send it</button>'+
+    '<div class="jd-status" id="jdStatus"></div>';
+  document.getElementById('jdFile').onchange=jdFileChange;
+  document.getElementById('jdTitle').oninput=jdCheck;
+}
+async function jdFileChange(e){
+  const f=e.target.files[0];if(!f)return;
+  document.getElementById('jdHint').textContent='compressing…';
+  try{
+    const bmp=await createImageBitmap(f);
+    const w=Math.min(1920,bmp.width),h=Math.round(bmp.height*(w/bmp.width));
+    const c=document.createElement('canvas');c.width=w;c.height=h;
+    c.getContext('2d').drawImage(bmp,0,0,w,h);
+    jdBlob=await new Promise(r=>c.toBlob(r,'image/jpeg',0.82));
+    const pick=document.querySelector('.jd-pick');
+    pick.querySelectorAll('img').forEach(i=>i.remove());
+    const img=document.createElement('img');img.src=URL.createObjectURL(jdBlob);pick.prepend(img);
+    document.getElementById('jdHint').textContent=Math.round(jdBlob.size/1024)+' kb — tap to change';
+    jdCheck();
+  }catch(err){document.getElementById('jdHint').textContent='could not read that photo';}
+}
+function jdCheck(){
+  document.getElementById('jdSend').disabled=!(jdBlob&&document.getElementById('jdTitle').value.trim().length>2);
+}
+async function jdSend(){
+  const btn=document.getElementById('jdSend'),st=document.getElementById('jdStatus');
+  btn.disabled=true;st.classList.remove('err');
+  try{
+    st.textContent='uploading photo…';
+    const path=jdArea.slug+'/slot'+jdSlot.n+'-'+Date.now()+'.jpg';
+    const up=await sb.storage.from('projects').upload(path,jdBlob,{contentType:'image/jpeg'});
+    if(up.error)throw up.error;
+    const{data:pub}=sb.storage.from('projects').getPublicUrl(path);
+    st.textContent='publishing…';
+    const row={
+      area:jdArea.slug,slot:jdSlot.n,
+      title:document.getElementById('jdTitle').value.trim(),
+      description:document.getElementById('jdDesc').value.trim(),
+      photo_url:pub.publicUrl,
+      taken_at:new Date(document.getElementById('jdDate').value+'T12:00:00').toISOString()
+    };
+    const ins=await sb.from('projects').upsert(row,{onConflict:'area,slot'});
+    if(ins.error)throw ins.error;
+    jdScreen='done';
+    document.getElementById('jdBody').innerHTML=
+      '<div class="jd-done"><div class="big">🦍</div><div class="t">it\'s live</div>'+
+      '<div class="s">'+jdArea.name+' · frame '+jdSlot.n+' · '+jdEsc(row.title)+'</div>'+
+      '<a href="https://www.cleantowers.com/locations/'+jdArea.slug+'#recent-projects" target="_blank">view the page →</a>'+
+      '<button class="jd-ghost" onclick="jdPickArea(\''+jdArea.slug+'\')">drop another</button></div>';
+  }catch(err){
+    st.textContent='failed: '+(err.message||err)+' — try again';
+    st.classList.add('err');btn.disabled=false;
+  }
+}
+function jdEsc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+</script>
+
