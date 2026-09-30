@@ -1,0 +1,2083 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+<title>Clean Towers — Logger</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f7f8fa;
+    --surface: #ffffff;
+    --card: #ffffff;
+    --card-hover: #f4f6f8;
+    --border: #e6e9ee;
+    --border-bright: #d3d8e0;
+    --sky: #29ABE2;
+    --sky-dim: rgba(41,171,226,0.12);
+    --sky-glow: rgba(41,171,226,0.06);
+    --navy: #1A2B4A;
+    --charcoal: #2D2D2D;
+    --text: #1a2230;
+    --text-muted: #6b7686;
+    --text-dim: #aab2bf;
+    --green: #2ecc71;
+    --orange: #f39c12;
+    --red: #e74c3c;
+    --shadow: 0 1px 3px rgba(16,24,40,0.06), 0 1px 2px rgba(16,24,40,0.04);
+    --shadow-lg: 0 8px 24px rgba(16,24,40,0.12);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  /* Google Places autocomplete dropdown must sit above the modal */
+  .pac-container {
+    z-index: 1000000 !important;
+    border-radius: 10px;
+    box-shadow: 0 8px 24px rgba(16,24,40,0.18);
+    font-family: 'Inter', sans-serif;
+    margin-top: 4px;
+  }
+  .pac-item { padding: 8px 12px; font-size: 13px; cursor: pointer; }
+  .pac-item:hover { background: var(--sky-glow); }
+
+  /* TABS */
+  .tabs {
+    display: flex;
+    gap: 4px;
+    padding: 10px 16px 0;
+    background: var(--surface);
+    position: sticky;
+    top: 0;
+    z-index: 90;
+  }
+  .tab {
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: var(--text-muted);
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    padding: 10px 16px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .tab:hover { color: var(--text); }
+  .tab.active { color: var(--sky); border-bottom-color: var(--sky); }
+
+  /* MAP */
+  #mapWrap { position: relative; height: calc(100vh - 110px); height: calc(100dvh - 110px); }
+  #map { width: 100%; height: 100%; }
+
+  .ct-pin {
+    position: absolute; transform: translate(-50%, -100%);
+    cursor: pointer; z-index: 1;
+    transition: transform 0.15s cubic-bezier(0.34,1.56,0.64,1);
+    transform-origin: 50% 100%;
+  }
+  .ct-pin-teardrop {
+    width: 18px; height: 18px;
+    background: var(--pin);
+    border: 2.5px solid #fff;
+    border-radius: 50% 50% 50% 0;
+    transform: rotate(-45deg);
+    box-shadow: 0 2px 5px rgba(16,24,40,0.35);
+  }
+  .ct-pin-approx .ct-pin-teardrop {
+    background: #fff; border-color: var(--pin); border-width: 3px;
+  }
+  .ct-pin:hover { transform: translate(-50%, -100%) scale(1.35); z-index: 1000; }
+  .ct-pin:hover .ct-pin-teardrop { box-shadow: 0 4px 10px rgba(16,24,40,0.5); }
+
+  .ct-qv {
+    position: absolute; bottom: 130%; left: 50%; transform: translateX(-50%) scale(0.95);
+    background: #fff; border: 1px solid var(--border); border-radius: 10px;
+    box-shadow: var(--shadow-lg); padding: 10px 12px; min-width: 160px; max-width: 220px;
+    opacity: 0; pointer-events: none; transition: opacity 0.15s, transform 0.15s;
+    z-index: 1001;
+  }
+  .ct-pin:hover .ct-qv { opacity: 1; transform: translateX(-50%) scale(1); }
+  .ct-qv-name { font-size: 13px; font-weight: 700; color: var(--navy); line-height: 1.25; }
+  .ct-qv-meta { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+  .ct-qv-row { font-size: 12px; color: var(--text); margin-top: 5px; }
+  .ct-qv-phone { color: var(--sky); }
+
+  .map-legend {
+    position: absolute; top: 12px; right: 12px; z-index: 500;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+    padding: 12px 14px; box-shadow: var(--shadow-lg); font-family: 'Inter', sans-serif;
+    min-width: 160px;
+  }
+  .map-legend-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); margin-bottom: 8px; }
+  .map-legend-row { display: flex; align-items: center; gap: 8px; padding: 3px 0; }
+  .map-legend-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+  .map-legend-label { font-size: 12px; color: var(--text); flex: 1; }
+  .map-legend-count { font-size: 12px; font-weight: 700; color: var(--navy); }
+
+  .locate-btn {
+    position: absolute; bottom: 24px; right: 16px; z-index: 600;
+    width: 48px; height: 48px; border-radius: 50%;
+    background: var(--surface); border: 1px solid var(--border);
+    box-shadow: var(--shadow-lg); cursor: pointer; font-size: 20px;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s;
+  }
+  .locate-btn:hover { transform: scale(1.06); }
+  .locate-btn.active { background: var(--sky); border-color: var(--sky); }
+
+  .me-dot {
+    position: absolute; transform: translate(-50%,-50%);
+    width: 18px; height: 18px; border-radius: 50%;
+    background: #1a73e8; border: 3px solid #fff;
+    box-shadow: 0 0 0 rgba(26,115,232,0.5);
+    animation: mePulse 2s infinite;
+  }
+  @keyframes mePulse {
+    0% { box-shadow: 0 0 0 0 rgba(26,115,232,0.45); }
+    70% { box-shadow: 0 0 0 16px rgba(26,115,232,0); }
+    100% { box-shadow: 0 0 0 0 rgba(26,115,232,0); }
+  }
+
+  .map-status {
+    position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
+    background: var(--surface); border: 1px solid var(--border); border-radius: 20px;
+    padding: 6px 16px; font-size: 12px; color: var(--text-muted); z-index: 500;
+    box-shadow: var(--shadow); font-family: 'Inter', sans-serif; display: none;
+  }
+  .map-status.show { display: block; }
+
+  .near-panel {
+    position: absolute; bottom: 24px; left: 16px; z-index: 600;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+    box-shadow: var(--shadow-lg); padding: 12px 14px; font-family: 'Inter', sans-serif;
+    min-width: 200px; max-width: 260px; display: none;
+  }
+  .near-panel.show { display: block; }
+  .near-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); margin-bottom: 8px; }
+  .near-row { display: flex; align-items: center; gap: 8px; padding: 6px 0; cursor: pointer; border-bottom: 1px solid var(--border); }
+  .near-row:last-child { border-bottom: none; }
+  .near-row:hover .near-name { color: var(--sky); }
+  .near-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .near-info { flex: 1; min-width: 0; }
+  .near-name { font-size: 13px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .near-meta { font-size: 11px; color: var(--text-muted); }
+  .near-dist { font-size: 12px; font-weight: 700; color: var(--navy); flex-shrink: 0; }
+
+  /* TODAY DASHBOARD */
+  #view-today { padding: 16px; max-width: 760px; margin: 0 auto; box-sizing: border-box; }
+  #view-lunch { padding: 16px; max-width: 760px; margin: 0 auto; box-sizing: border-box; }
+  .dash-greeting { font-size: 22px; font-weight: 800; color: var(--navy); margin-bottom: 2px; letter-spacing:-0.02em; }
+  .dash-date { font-size: 13px; color: var(--text-muted); margin-bottom: 18px; }
+  #todayContent { opacity: 0; }
+  #todayContent.page-shown { opacity: 1; }
+  #todayContent.page-fade { animation: pageFadeIn 0.9s ease forwards; }
+  @keyframes pageFadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+  /* Reusable fade-in-up when tabbing to a view */
+  .view-fade { animation: pageFadeIn 0.55s ease both; }
+
+  /* EARNINGS RING CARD */
+  .earn-card {
+    display: flex; align-items: center; gap: 22px;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
+    padding: 22px; box-shadow: var(--shadow); margin-bottom: 18px;
+  }
+  .ring-wrap { position: relative; width: 130px; height: 130px; flex-shrink: 0; }
+  .ring-wrap svg { transform: rotate(-90deg); }
+  .ring-center {
+    position: absolute; inset: 0; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; text-align: center;
+  }
+  .ring-amt { font-size: 28px; font-weight: 800; color: var(--navy); line-height: 1; letter-spacing: -0.02em; }
+  .ring-cap { font-size: 12px; color: var(--text-muted); margin-top: 3px; }
+  .earn-side { flex: 1; min-width: 0; }
+  .earn-side-title { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); margin-bottom: 10px; }
+  .earn-stat-row { display: flex; align-items: baseline; gap: 8px; margin-bottom: 8px; }
+  .earn-stat-num { font-size: 22px; font-weight: 800; color: var(--navy); }
+  .earn-stat-lbl { font-size: 13px; color: var(--text-muted); }
+  .earn-capnote { font-size: 12px; color: var(--text-dim); margin-top: 4px; }
+  .earn-capnote.maxed { color: var(--green); font-weight: 700; }
+
+  .dash-section-title {
+    font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--text-muted); margin: 22px 0 10px;
+  }
+  .log-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+    padding: 12px 14px; margin-bottom: 8px; box-shadow: var(--shadow);
+    display: flex; align-items: center; gap: 12px;
+  }
+  .log-card .lc-main { flex: 1; min-width: 0; }
+  .log-card .lc-name { font-size: 14px; font-weight: 700; color: var(--text); }
+  .log-card .lc-meta { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+  .log-card .lc-amt { font-size: 15px; font-weight: 800; color: var(--green); flex-shrink: 0; }
+  .log-card .lc-kind { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-dim); }
+  .dash-empty { text-align: center; padding: 30px 16px; color: var(--text-dim); font-size: 13px; }
+  .dash-empty .e-emoji { font-size: 36px; margin-bottom: 10px; }
+
+  /* Lunch Calls (Alex) */
+  .lunch-stat { font-size: 15px; color: var(--text); margin-bottom: 4px; }
+  .lunch-stat b { color: var(--sky); font-weight: 800; }
+  .lunch-hint { font-size: 12px; color: var(--text-muted); margin-bottom: 14px; line-height: 1.4; }
+  .lunch-list { display: flex; flex-direction: column; gap: 12px; }
+  /* iOS-style stacked card */
+  .lunch-card { display: flex; flex-direction: column; box-sizing: border-box; width: 100%; background: #ffffff; border: none; border-radius: 18px; padding: 16px; box-shadow: 0 1px 3px rgba(16,24,40,0.06), 0 1px 2px rgba(16,24,40,0.04); }
+  .lunch-card.no-answer { opacity: 0.5; }
+  .na-tag { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: #64748b; background: #eef1f5; border-radius: 6px; padding: 2px 7px; margin-left: 6px; vertical-align: middle; }
+  .lunch-mgr { font-size: 13px; font-weight: 600; color: var(--sky); margin-top: 6px; }
+  .lunch-card.priority { box-shadow: 0 0 0 2px #f5a623, 0 1px 3px rgba(16,24,40,0.06); background: #fffdf7; }
+  .lunch-card-info { min-width: 0; }
+  .lunch-name { font-size: 17px; font-weight: 700; color: var(--navy); letter-spacing: -0.01em; line-height: 1.25; }
+  .lunch-meta { font-size: 13px; color: var(--text-muted); margin-top: 3px; }
+  .lunch-booked { font-size: 12px; font-weight: 700; color: #1e9e54; background: #2ecc7114; border: 1px solid #2ecc7155; border-radius: 8px; padding: 3px 9px; display: inline-block; margin-top: 8px; }
+
+  /* All lunch buttons match the CRM Pay Up flat-pill look */
+  .lunch-act, .lunch-book-btn, .lunch-na-btn, .lunch-rebook-btn {
+    background: #eef1f5;
+    color: var(--navy);
+    border: 2px solid var(--border-bright);
+    border-radius: 12px;
+    box-shadow: 0 1px 2px rgba(16,24,40,0.04);
+    font-family: 'Inter', sans-serif; font-weight: 600; font-size: 14px;
+    padding: 13px 18px; cursor: pointer; -webkit-tap-highlight-color: transparent;
+    transition: transform 0.18s cubic-bezier(0.2,0.8,0.3,1), background 0.18s ease, border-color 0.18s ease;
+  }
+  .lunch-act:hover, .lunch-book-btn:hover, .lunch-na-btn:hover, .lunch-rebook-btn:hover { background: #e6eaf0; border-color: #c1c8d4; }
+  .lunch-act:active, .lunch-book-btn:active, .lunch-na-btn:active, .lunch-rebook-btn:active { transform: scale(0.97); background: #dfe3ea; }
+
+  /* action pills (search / notes) */
+  .lunch-actions { display: flex; gap: 8px; margin-top: 14px; }
+  .lunch-act { flex: 1; padding: 11px; }
+  .lunch-act.note.has { background: #ede9f6; color: #6d5a9c; border-color: #cfc4e6; }
+  .lunch-act.note.has:hover { background: #e3dcf0; border-color: #bcaede; }
+  .lunch-act { font-size: 13px; padding: 11px 8px; }
+  /* found-phone chip (tap to call) */
+  .lunch-phone { margin-top: 8px; }
+  .phone-chip { display: inline-flex; align-items: center; gap: 6px; font-size: 15px; font-weight: 800; color: #1e9e54; background: #eafaf1; border: 1px solid #b9e6cc; border-radius: 10px; padding: 7px 12px; text-decoration: none; -webkit-tap-highlight-color: transparent; }
+  .phone-chip:active { transform: scale(0.97); }
+  .phone-loading { font-size: 13px; color: var(--text-muted); }
+  .phone-err { font-size: 12px; color: #e07a5f; }
+
+  /* live notes box */
+  .lunch-note-wrap { margin-top: 10px; }
+  .lunch-note-input { width: 100%; box-sizing: border-box; min-height: 68px; border: 1px solid #e6e9ee; border-radius: 12px; padding: 10px 12px; font-family: 'Inter', sans-serif; font-size: 15px; color: var(--text); background: #fafbfc; outline: none; resize: vertical; }
+  .lunch-note-input:focus { border-color: var(--sky); background: #fff; }
+
+  /* bottom button row */
+  .lunch-btns { display: flex; gap: 8px; margin-top: 12px; }
+  .lunch-book-btn { flex: 1; white-space: nowrap; }
+  .lunch-na-btn { flex: 0 0 auto; white-space: nowrap; }
+  /* scheduled (booked) card — compact */
+  .lunch-card.scheduled { flex-direction: row; align-items: center; gap: 10px; background: #f6fbf8; box-shadow: 0 0 0 1px #2ecc7133; }
+  .lunch-card.scheduled .lunch-card-info { flex: 1; min-width: 0; }
+  .lunch-rebook-btn { flex: 0 0 auto; padding: 10px 16px; font-size: 13px; }
+  .lunch-rebook-btn:active { transform: scale(0.97); }
+
+  /* Alex's Today lunch summary */
+  .lunch-today-card { display: flex; align-items: center; background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 20px 16px; margin-bottom: 18px; }
+  .lt-stat { flex: 1; text-align: center; }
+  .lt-num { font-size: 34px; font-weight: 800; color: var(--sky); letter-spacing: -0.02em; line-height: 1; }
+  .lt-lbl { font-size: 12px; color: var(--text-muted); margin-top: 6px; }
+  .lt-divider { width: 1px; align-self: stretch; background: var(--border); margin: 4px 0; }
+  .lc-time { font-size: 13px; font-weight: 700; color: #1e9e54; white-space: nowrap; }
+
+  /* Dashboard lunch calendar */
+  .lunch-cal { background: var(--card); border: 2px solid var(--border-bright); border-radius: 14px; padding: 12px 12px 14px; margin-bottom: 18px; }
+  .cal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+  .cal-month { font-size: 14px; font-weight: 700; color: var(--navy); }
+  .cal-nav { background: none; border: none; font-size: 22px; line-height: 1; color: var(--sky); cursor: pointer; padding: 2px 14px; border-radius: 8px; -webkit-tap-highlight-color: transparent; }
+  .cal-nav:active { background: var(--sky-dim, #29ABE21f); }
+  .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+  .cal-dow { text-align: center; font-size: 10px; font-weight: 700; color: var(--text-muted); padding: 4px 0; }
+  .cal-cell { position: relative; aspect-ratio: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; font-family: 'Inter', sans-serif; font-size: 14px; font-weight: 600; color: var(--navy); border-radius: 8px; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  .cal-cell.empty { visibility: hidden; cursor: default; }
+  .cal-daynum { line-height: 1; display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; }
+  .cal-cell.today .cal-daynum { background: #e74c3c; color: #fff; border-radius: 50%; font-weight: 800; }
+  .cal-cell.has { font-weight: 700; color: var(--navy); }
+  .cal-cell.next-mo { color: var(--text-dim); opacity: 0.7; }
+  .cal-cell.next-mo.has { color: var(--navy); opacity: 1; }
+  .cal-cell.sel .cal-daynum { background: var(--sky); color: #fff; border-radius: 50%; font-weight: 800; }
+  .cal-cell.sel.today .cal-daynum { background: #e74c3c; }
+  .cal-cell.sel .cal-dot { background: #fff; }
+  .cal-dots { display: flex; gap: 2px; align-items: center; justify-content: center; height: 9px; }
+  .cal-dot { width: 8px; height: 8px; border-radius: 50%; background: #1e9e54; }
+
+  /* Call script (pinned top of lunch tab) */
+  /* Call script — spacious, readable, low cognitive load */
+  .call-script { background: #ffffff; border: 2px solid var(--border-bright); border-radius: 16px; padding: 4px 18px 18px; margin-bottom: 18px; box-shadow: 0 1px 3px rgba(16,24,40,0.05); }
+  .cs-head { display: flex; align-items: center; justify-content: space-between; padding: 14px 0 4px; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  .cs-title { font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); }
+  .cs-collapse { font-size: 14px; color: var(--text-dim); transition: transform 0.2s; }
+  .call-script.collapsed .cs-collapse { transform: rotate(-90deg); }
+  .call-script.collapsed .cs-body { display: none; }
+  .cs-body { padding-top: 6px; }
+  .cs-opener { font-size: 17px; font-weight: 700; color: var(--navy); line-height: 1.45; padding: 12px 0 18px; border-bottom: 1px solid #f0f2f5; }
+  .cs-scenario { padding: 16px 0; border-bottom: 1px solid #f0f2f5; }
+  .cs-scenario:last-of-type { border-bottom: none; }
+  .cs-cue { display: inline-block; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; color: #94a3b8; margin-bottom: 8px; }
+  .cs-say { font-size: 16px; line-height: 1.5; color: var(--navy); background: #f4f9fd; border-left: 3px solid var(--sky); border-radius: 0 10px 10px 0; padding: 12px 14px; }
+  .cs-blank { color: var(--sky); font-weight: 800; letter-spacing: 1px; }
+  .cs-then { font-size: 15px; color: var(--text); line-height: 1.5; padding-top: 16px; }
+  .cs-then b { color: var(--navy); }
+
+  /* Lunch calendar */
+  .lunch-cal { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 12px 12px 14px; }
+
+  .recent-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+    padding: 4px 14px; box-shadow: var(--shadow);
+  }
+  .recent-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 0; border-bottom: 1px solid var(--border);
+  }
+  .recent-row:last-child { border-bottom: none; }
+  .recent-day { font-size: 14px; font-weight: 600; color: var(--text); }
+  .recent-amt { font-size: 15px; font-weight: 800; }
+  .recent-amt.has { color: var(--navy); }
+  .recent-amt.zero { color: var(--text-dim); }
+  .recent-cap {
+    font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
+    color: var(--green); background: rgba(46,204,113,0.12); padding: 2px 6px;
+    border-radius: 4px; margin-left: 4px; vertical-align: middle;
+  }
+
+  @media (max-width: 768px){
+    .earn-card { flex-direction: column; align-items: stretch; text-align: center; gap: 16px; }
+    .earn-side-title { text-align: center; }
+    .earn-stat-row { justify-content: center; }
+    .ring-wrap { margin: 0 auto; }
+  }
+
+  html, body { width: 100%; max-width: 100% !important; overflow-x: hidden; }
+  body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; min-height: 100vh; overflow-x: hidden; }
+
+  /* HEADER */
+  .header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 20px; background: var(--surface);
+    position: sticky; top: 0; z-index: 100;
+    border-bottom: 1px solid var(--border); gap: 12px;
+  }
+  .header-left { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+  .logo-mark { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; font-size: 22px; }
+  .brand { font-size: 14px; font-weight: 700; letter-spacing: 0.03em; text-transform: uppercase; color: var(--navy); }
+  .brand span { color: var(--navy); }
+  .header-right { display: flex; align-items: center; gap: 8px; }
+  .search-wrap { position: relative; flex: 1; }
+  .search-wrap input {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+    color: var(--text); font-family: 'Inter', sans-serif; font-size: 14px;
+    padding: 8px 12px; width: 100%; outline: none; transition: border-color 0.2s;
+  }
+  .search-wrap input:focus { border-color: var(--sky); }
+  .btn-scan {
+    background: var(--sky-dim); border: 1px solid var(--sky); border-radius: 20px;
+    color: var(--text); font-family: 'Inter', sans-serif; font-weight: 500; font-size: 13px;
+    padding: 8px 14px; cursor: pointer; display: flex; align-items: center; gap: 6px;
+    transition: all 0.2s; flex-shrink: 0;
+  }
+  .btn-scan:hover { background: rgba(41,171,226,0.18); color: var(--sky); }
+  .btn-add {
+    background: var(--sky); border: 2px solid var(--navy); border-radius: 22px;
+    color: #fff; font-family: 'Inter', sans-serif; font-weight: 700; font-size: 17px;
+    padding: 13px 28px; cursor: pointer; display: flex; align-items: center; gap: 6px;
+    transition: all 0.2s; flex-shrink: 0;
+  }
+  .btn-add:hover { background: #1d96cc; }
+
+  /* BOARD (simplified — single responsive grid of building cards) */
+  #view-board { padding: 16px; max-width: 960px; margin: 0 auto; }
+  .board-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px; }
+  .bcard {
+    background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+    padding: 14px; box-shadow: var(--shadow); cursor: pointer; transition: all 0.15s;
+    position: relative;
+  }
+  .bcard:hover { border-color: var(--border-bright); transform: translateY(-1px); box-shadow: var(--shadow-lg); }
+  .bcard.locked { cursor: default; }
+  .bcard.locked:hover { border-color: var(--border); transform: none; box-shadow: var(--shadow); }
+  .bcard-lock { position: absolute; top: 12px; right: 12px; font-size: 13px; color: var(--text-dim); opacity: 0.7; }
+  .bcard-name { font-size: 15px; font-weight: 700; color: var(--text); line-height: 1.3; padding-right: 22px; }
+  .bcard-meta { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+  .bcard-contact { font-size: 12px; color: var(--sky); margin-top: 8px; display: flex; align-items: center; gap: 5px; }
+  .bcard-nocontact { font-size: 12px; color: var(--text-dim); margin-top: 8px; }
+  .bcard-check { position: absolute; top: 12px; right: 12px; font-size: 14px; color: var(--green); }
+  .bcard-tag {
+    display: inline-block; font-size: 9px; padding: 2px 6px; border-radius: 4px;
+    background: var(--surface); border: 1px solid var(--border); color: var(--text-muted);
+    text-transform: uppercase; letter-spacing: 0.05em; margin-top: 8px;
+  }
+  .tag-hotel { border-color: #f59e0b44; color: #f59e0b; }
+  .tag-office { border-color: #818cf844; color: #818cf8; }
+  .tag-residential { border-color: #10b98144; color: #10b981; }
+
+  /* BOTTOM SHEET / MODAL */
+  .modal-bg {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+    z-index: 999999; align-items: center; justify-content: center; padding: 16px;
+  }
+  .modal-bg.open { display: flex; }
+  body.modal-open { overflow: hidden; touch-action: none; }
+  .modal {
+    background: #ffffff; border: 1px solid var(--border-bright); border-radius: 20px;
+    width: 100%; max-width: 680px; max-height: 90vh; overflow-y: auto;
+    scrollbar-width: thin; animation: springPop 0.42s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  @keyframes springPop {
+    0% { transform: scale(0.85); opacity: 0; }
+    60% { transform: scale(1.03); opacity: 1; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+  .sheet-handle { width: 36px; height: 4px; background: #d3d8e0; border-radius: 2px; margin: 12px auto 0; }
+  .modal-head { padding: 14px 20px 6px; display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+  .modal-head-left { flex: 1; min-width: 0; }
+  .modal-title { font-size: 19px; font-weight: 700; line-height: 1.2; color: var(--navy); }
+  .modal-subtitle { font-size: 13px; color: var(--sky); margin-top: 3px; }
+  .btn-delete-mini {
+    background: var(--red); color: #fff; border: none; border-radius: 8px;
+    font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 700;
+    padding: 6px 12px; cursor: pointer; flex-shrink: 0; margin-top: 2px; transition: all 0.15s;
+  }
+  .btn-delete-mini:hover { background: #c0392b; }
+  .modal-close {
+    width: 28px; height: 28px; border-radius: 50%; border: none; background: #eef1f5;
+    color: var(--text-muted); cursor: pointer; font-size: 13px;
+    display: flex; align-items: center; justify-content: center; margin-top: 4px; flex-shrink: 0;
+  }
+  .modal-close:hover { background: #dfe3e9; }
+  .modal-body { padding: 4px 20px 12px; }
+  .field { margin-bottom: 11px; }
+  .field label { display: block; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--sky); margin-bottom: 5px; }
+  .field input, .field select, .field textarea {
+    width: 100%; background: #ffffff; border: 1px solid var(--border); border-radius: 10px;
+    color: var(--text); font-family: 'Inter', sans-serif; font-size: 15px;
+    padding: 10px 14px; outline: none; transition: border-color 0.2s; box-sizing: border-box; resize: vertical;
+  }
+  .field input:focus, .field select:focus, .field textarea:focus { border-color: var(--sky); }
+  .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .section-label {
+    font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.15em;
+    color: var(--text-dim); margin: 12px 0 8px; display: flex; align-items: center; gap: 8px;
+  }
+  .section-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+  .reward-hint {
+    background: var(--sky-glow); border: 1px solid var(--sky-dim); border-radius: 10px;
+    padding: 10px 12px; font-size: 12px; color: var(--text-muted); margin-bottom: 11px;
+  }
+  .reward-hint strong { color: var(--sky); }
+  .modal-footer {
+    padding: 12px 20px 20px; display: flex; flex-direction: column; gap: 10px;
+    position: sticky; bottom: 0; background: #ffffff; border-top: 1px solid var(--border);
+    box-shadow: 0 -4px 12px rgba(16,24,40,0.05); border-radius: 0 0 20px 20px;
+  }
+  .btn-save-full {
+    width: 100%; padding: 16px; background: var(--sky); border: 1px solid #1d8fc0;
+    border-radius: 12px; color: #fff; font-family: 'Inter', sans-serif; font-size: 16px;
+    font-weight: 700; cursor: pointer; transition: all 0.2s; letter-spacing: 0.01em;
+    box-shadow: 0 2px 6px rgba(41,171,226,0.35), inset 0 1px 0 rgba(255,255,255,0.25);
+  }
+  .btn-save-full:hover { background: #1d96cc; }
+  .btn-save-full:active { transform: translateY(1px); }
+  .btn-cancel {
+    padding: 12px 18px; background: transparent; border: 1px solid var(--border);
+    border-radius: 10px; color: var(--text-muted); font-family: 'Inter', sans-serif;
+    font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; width: 100%;
+  }
+  .btn-cancel:hover { border-color: var(--border-bright); color: var(--text); }
+
+  /* IMPORT/SCAN scaffolding reused */
+  .import-area {
+    border: 2px dashed var(--border); border-radius: 12px; padding: 36px 20px;
+    text-align: center; cursor: pointer; transition: all 0.2s;
+  }
+  .import-area:hover { border-color: var(--sky); background: var(--sky-glow); }
+  .import-icon { font-size: 32px; margin-bottom: 8px; }
+  .import-text { font-size: 13px; color: var(--text-muted); }
+  .import-text strong { color: var(--sky); }
+  .scan-preview { width: 100%; border-radius: 12px; margin-bottom: 12px; display: none; }
+  .scan-status { text-align: center; font-size: 13px; color: var(--text-muted); padding: 12px; display: none; }
+  .scan-review { display: none; }
+
+  /* TOAST */
+  .toast {
+    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(80px);
+    background: var(--navy); border: none; border-radius: 10px; padding: 12px 20px;
+    font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 600; color: #fff;
+    z-index: 9999; transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1); white-space: nowrap;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+  .toast.reward { background: var(--green); }
+
+  /* reward pop */
+  .reward-pop {
+    position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%) scale(0.8);
+    background: #fff; border: 2px solid var(--green); border-radius: 20px;
+    padding: 24px 36px; text-align: center; z-index: 100001; opacity: 0;
+    pointer-events: none; transition: all 0.3s cubic-bezier(0.34,1.56,0.64,1);
+    box-shadow: var(--shadow-lg); font-family: 'Inter', sans-serif;
+  }
+  .reward-pop.show { opacity: 1; transform: translate(-50%,-50%) scale(1); }
+  .rp-amt { font-size: 40px; font-weight: 800; color: var(--green); }
+  .rp-lbl { font-size: 13px; font-weight: 700; letter-spacing: 0.08em; color: var(--navy); margin-top: 4px; text-transform: uppercase; }
+
+  /* $250 cap celebration */
+  .confetti-layer {
+    position: fixed; inset: 0; pointer-events: none; z-index: 100002; overflow: hidden;
+  }
+  .confetti-bit {
+    position: absolute; top: -16px; border-radius: 2px; opacity: 0;
+    animation-name: confettiFall; animation-timing-function: ease-in;
+    animation-fill-mode: forwards;
+  }
+  @keyframes confettiFall {
+    0%   { opacity: 1; transform: translateY(0) translateX(0) rotate(0deg); }
+    100% { opacity: 0; transform: translateY(105vh) translateX(var(--drift)) rotate(var(--rot)); }
+  }
+  .hooray-banner {
+    position: fixed; top: 38%; left: 50%; transform: translate(-50%,-50%) scale(0.7);
+    background: #fff; border: 3px solid var(--green); border-radius: 24px;
+    padding: 28px 44px; text-align: center; z-index: 100003; opacity: 0;
+    pointer-events: none; box-shadow: var(--shadow-lg); font-family: 'Inter', sans-serif;
+    transition: opacity 0.35s ease, transform 0.45s cubic-bezier(0.34,1.56,0.64,1);
+  }
+  .hooray-banner.show { opacity: 1; transform: translate(-50%,-50%) scale(1); }
+  .hb-emoji { font-size: 52px; animation: hbBounce 0.9s ease infinite; }
+  @keyframes hbBounce { 0%,100% { transform: translateY(0);} 50% { transform: translateY(-8px);} }
+  .hb-title { font-size: 30px; font-weight: 800; color: var(--green); margin-top: 6px; letter-spacing: -0.02em; }
+  .hb-sub { font-size: 13px; font-weight: 600; color: var(--navy); margin-top: 4px; }
+
+  ::-webkit-scrollbar { width: 4px; height: 4px; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  @media (max-width: 768px) {
+    .logo-mark { display: none; }
+    .brand { display: none; }
+    .header { padding: 12px 14px; gap: 8px; }
+    .btn-scan { padding: 7px 10px; font-size: 12px; }
+    .btn-add { padding: 12px 22px; font-size: 16px; }
+    .modal { max-width: 100% !important; }
+    /* Lift map controls clear of Safari's bottom toolbar using the iOS
+       safe-area inset (adapts to the actual toolbar height) plus a base gap.
+       Cap the nearest panel height so its 5th row is never clipped — it
+       scrolls internally if it would run past the top. */
+    .locate-btn { bottom: calc(env(safe-area-inset-bottom, 0px) + 56px); }
+    .near-panel {
+      bottom: calc(env(safe-area-inset-bottom, 0px) + 56px);
+      left: 12px; max-width: calc(100vw - 84px); min-width: 0;
+      max-height: calc(100dvh - 240px); overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+  }
+
+  /* SPLASH */
+  .splash {
+    position: fixed; inset: 0; background: #ffffff; z-index: 99999;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 10px; padding-bottom: 12vh; animation: splashFade 0.5s ease forwards 1.4s;
+  }
+  @keyframes splashFade { to { opacity: 0; pointer-events: none; } }
+  .splash-emoji { font-size: 48px; opacity: 0; animation: iosFade 0.85s ease-out forwards 0s; }
+  @keyframes iosFade { 0% { opacity: 0; } 100% { opacity: 1; } }
+  .splash-title { font-size: 18px; font-weight: 400; color: var(--navy); letter-spacing: 1px; opacity: 0; animation: iosFade 0.85s ease-out forwards 0s; }
+  .splash-title span { color: #29ABE2; font-weight: 400; }
+  .splash-sub { font-size: 12px; color: var(--text-muted); letter-spacing: 2px; text-transform: uppercase; opacity: 0; animation: iosFade 0.85s ease-out forwards 0.15s; }
+</style>
+</head>
+<body>
+
+<!-- PASSWORD GATE -->
+<div id="gate" style="position:fixed;inset:0;background:#ffffff;z-index:100000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;font-family:'Inter',sans-serif;">
+  <div style="font-size:42px;">🦍</div>
+  <div style="font-size:20px;color:var(--navy);font-weight:700;letter-spacing:0.5px;">clean <span style="color:#29ABE2;">towers</span></div>
+  <div style="font-size:13px;color:var(--text-muted);">logger access</div>
+  <select id="gateLogger" style="margin-top:8px;background:#ffffff;border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:16px;padding:14px 16px;width:240px;outline:none;text-align:center;text-align-last:center;cursor:pointer;">
+    <option value="isaac">Logger 1</option>
+    <option value="alex">Logger 2</option>
+  </select>
+  <input id="gateInput" type="password" placeholder="password" style="background:#ffffff;border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:16px;padding:14px 16px;width:240px;outline:none;text-align:center;" onkeydown="if(event.key==='Enter')checkGate()">
+  <button onclick="checkGate()" style="background:#29ABE2;border:none;border-radius:10px;color:#000;font-weight:700;font-size:15px;padding:13px 28px;cursor:pointer;">enter</button>
+  <div id="gateErr" style="font-size:12px;color:#e74c3c;height:14px;"></div>
+</div>
+
+<!-- SPLASH -->
+<div class="splash" id="splash">
+  <div class="splash-emoji">🦍</div>
+  <div class="splash-title">clean <span>towers</span></div>
+  <div class="splash-sub">logger</div>
+</div>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-left">
+    <div class="logo-mark">🦍</div>
+    <div class="brand">Clean <span>Towers</span></div>
+  </div>
+  <div class="header-right">
+    <button class="btn-scan" onclick="openScan()">📷 scan</button>
+    <button class="btn-add" onclick="openAdd()">+ add</button>
+  </div>
+</div>
+
+<!-- TABS -->
+<div class="tabs" id="tabs">
+  <button class="tab active" data-view="today" onclick="switchView('today')">Today</button>
+  <button class="tab" data-view="board" id="tabBoard" onclick="switchView('board')">Board</button>
+  <button class="tab" data-view="lunch" id="tabLunch" onclick="switchView('lunch')" style="display:none">🍽️ Lunch Calls</button>
+  <button class="tab" data-view="map" onclick="switchView('map')">Map</button>
+</div>
+
+<!-- TODAY VIEW -->
+<div class="view" id="view-today">
+  <div id="todayContent"></div>
+</div>
+
+<!-- BOARD VIEW -->
+<div class="view" id="view-board" style="display:none">
+  <div class="board-grid" id="boardGrid"></div>
+</div>
+
+<!-- LUNCH CALLS VIEW (Alex only) -->
+<div class="view" id="view-lunch" style="display:none">
+  <div id="lunchContent"></div>
+</div>
+
+<!-- MAP VIEW -->
+<div class="view" id="view-map" style="display:none">
+  <div id="mapWrap">
+    <div id="map"></div>
+    <div id="mapStatus" class="map-status"></div>
+    <button id="locateBtn" class="locate-btn" onclick="toggleLocate()" title="My location">📍</button>
+    <div id="nearPanel" class="near-panel"></div>
+  </div>
+</div>
+
+<!-- ADD / EDIT SHEET -->
+<!-- LUNCH APPOINTMENT MODAL (Alex) -->
+<div class="modal-bg" id="apptModal">
+  <div class="modal">
+    <div class="sheet-handle"></div>
+    <div class="modal-head">
+      <div class="modal-head-left">
+        <div class="modal-title">book lunch</div>
+        <div class="modal-subtitle" id="apptTitle"></div>
+      </div>
+      <button class="modal-close" onclick="closeApptModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="field-row">
+        <div class="field"><label>Date</label><input type="date" id="appt_date"></div>
+        <div class="field"><label>Time</label><input type="time" id="appt_time"></div>
+      </div>
+      <div class="field"><label>Notes (added to the calendar event)</label><textarea id="appt_notes" rows="3" placeholder="e.g. spoke with Sarah, wants lunch Thurs, 12 people in office"></textarea></div>
+      <button class="btn-save-full" onclick="saveAppt()" style="margin-top:8px">🍽️ add to calendar</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="editModal">
+  <div class="modal">
+    <div class="sheet-handle"></div>
+    <div class="modal-head">
+      <div class="modal-head-left">
+        <div class="modal-title" id="modalTitle">add building</div>
+        <div class="modal-subtitle" id="modalSubtitle"></div>
+      </div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="reward-hint" id="rewardHint">
+        add the manager's name <strong>and</strong> email to earn <strong>$20</strong>.
+      </div>
+      <div class="field">
+        <label>Building Name *</label>
+        <input type="text" id="f_name" placeholder="e.g. Optima Sonoran Village">
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>City</label>
+          <select id="f_city">
+            <option value="Scottsdale">Scottsdale</option>
+            <option value="Phoenix">Phoenix</option>
+            <option value="Tempe">Tempe</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Type</label>
+          <select id="f_type">
+            <option value="Residential">Residential</option>
+            <option value="Hotel">Hotel</option>
+            <option value="Office">Office</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+      </div>
+      <div class="field">
+        <label>Floors</label>
+        <input type="number" id="f_floors" placeholder="e.g. 12">
+      </div>
+      <div class="field">
+        <label>Address / Building Search</label>
+        <input type="text" id="f_address" placeholder="Type a building name or address…" autocomplete="off">
+        <div style="font-size:11px;color:var(--text-muted);margin-top:6px">type the building name or address, pick from the dropdown — this places it on the map when you save</div>
+      </div>
+
+      <div class="section-label">manager contact</div>
+      <div class="field">
+        <label>Manager Name</label>
+        <input type="text" id="f_contact" placeholder="Property manager name">
+      </div>
+      <div class="field">
+        <label>Manager Email</label>
+        <input type="email" id="f_email" placeholder="mgr@building.com">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-save-full" id="saveBtn" onclick="saveBuilding()">Save</button>
+      <button class="btn-cancel" onclick="closeModal()">cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- SCAN SHEET -->
+<div class="modal-bg" id="scanModal">
+  <div class="modal" style="max-width:520px">
+    <div class="sheet-handle"></div>
+    <div class="modal-head">
+      <div class="modal-head-left">
+        <div class="modal-title">📷 scan business card</div>
+        <div class="modal-subtitle">pull manager name & email automatically</div>
+      </div>
+      <button class="modal-close" onclick="closeScan()">✕</button>
+    </div>
+    <div class="modal-body">
+      <img id="scanPreview" class="scan-preview" alt="card preview">
+      <div class="import-area" id="scanArea" onclick="document.getElementById('scanInput').click()">
+        <div class="import-icon">📸</div>
+        <div class="import-text">tap to take a photo or <strong>choose from library</strong></div>
+      </div>
+      <input type="file" id="scanInput" accept="image/*" capture="environment" style="display:none" onchange="handleScanFile(event)">
+      <div class="scan-status" id="scanStatus">📡 reading card…</div>
+      <div class="scan-review" id="scanReview">
+        <div class="field"><label>Name</label><input type="text" id="scan_name"></div>
+        <div class="field"><label>Email</label><input type="email" id="scan_email"></div>
+      </div>
+    </div>
+    <div class="modal-footer" id="scanFooter" style="display:none">
+      <button class="btn-save-full" onclick="useScanResult()">use this info</button>
+      <button class="btn-cancel" onclick="closeScan()">cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- SETTINGS (API key for scanner) -->
+<div class="modal-bg" id="settingsModal">
+  <div class="modal" style="max-width:480px">
+    <div class="sheet-handle"></div>
+    <div class="modal-head">
+      <div class="modal-head-left"><div class="modal-title">⚙️ settings</div></div>
+      <button class="modal-close" onclick="closeSettings()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="field">
+        <label>Anthropic API Key</label>
+        <input type="password" id="apiKeyInput" placeholder="sk-ant-…">
+        <div style="font-size:11px;color:var(--text-dim);margin-top:6px">stored locally on this device only — used only for the card scanner</div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-save-full" onclick="saveApiKey()">save key</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST + REWARD POP -->
+<div class="toast" id="toast"></div>
+<div class="reward-pop" id="rewardPop"><div class="rp-amt" id="rpAmt">+$20</div><div class="rp-lbl" id="rpLbl">manager info logged</div></div>
+<div class="confetti-layer" id="confettiLayer"></div>
+<div class="hooray-banner" id="hoorayBanner">
+  <div class="hb-emoji">🎉</div>
+  <div class="hb-title">Hooray!</div>
+  <div class="hb-sub">you hit your $250 daily cap</div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAkpITR4NMOe5XSiZlWjqJUp66-fMRLMJw&libraries=places"></script>
+<!-- Google Calendar API (Alex's lunch-appointment workflow) -->
+<script src="https://apis.google.com/js/api.js"></script>
+<script src="https://accounts.google.com/gsi/client"></script>
+<script>
+// ── CONFIG ──────────────────────────────────────────────────────────────────
+const SUPABASE_URL  = "https://hzbqzriceeukyrjjhubb.supabase.co";
+const SUPABASE_KEY  = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh6YnF6cmljZWV1a3lyampodWJiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1MTUxODksImV4cCI6MjA5NjA5MTE4OX0.W82AYok6n8Orrb0-_StRItYH04TxOWVNFCEeh4oxh7E";
+// Two selectable loggers. The key is the identity used for earnings rows in
+// Supabase; changing a key would start that person's tracking fresh.
+const LOGGERS = {
+  isaac: { label: 'Logger 1 — Isaac', name: 'Isaac', password: 'sprouts' },
+  alex:  { label: 'Logger 2 — Alex',  name: 'Alex',  password: 'blaire'  },
+};
+let LOGGER = sessionStorage.getItem('ct_logger_id') || null;  // set at login
+const DAILY_CAP     = 250;             // $ per Phoenix day
+const REWARD_CONTACT= 20;              // $ flat reward for a building with manager name + email
+
+// ── GOOGLE CALENDAR (Alex's lunch-appointment workflow) ──────────────────────
+// SETUP (one time, ~15 min) — see the setup notes at the bottom of this file:
+//   1. Google Cloud console → create/select a project → enable "Google Calendar API".
+//   2. Create an OAuth 2.0 Client ID (type: Web application). Under "Authorized
+//      JavaScript origins" add your app's URL (e.g. https://log.cleantowers.com
+//      AND http://localhost for testing). Paste that Client ID below.
+//   3. Share the calendar you want lunches on with Alex's Google account (Make
+//      changes to events). In that calendar's settings, copy its "Calendar ID"
+//      (your own calendar's ID is just your gmail address) and paste it below.
+const GCAL_CLIENT_ID = "478298734806-ckf5trai2cvjm4aore7vqdllmt1agsa5.apps.googleusercontent.com";   // Clean Towers Logger OAuth client
+const GCAL_CALENDAR_ID = "primary";  // event is created on the signed-in account's calendar; AJ is added as a guest so it appears on his calendar too
+const GCAL_INVITE_EMAIL = "iam.ajharris@gmail.com";  // AJ is invited to every lunch so it shows on his Google Calendar
+const GCAL_SCOPES = "https://www.googleapis.com/auth/calendar.events";
+
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// ── STATE ───────────────────────────────────────────────────────────────────
+let buildings = [];        // shared buildings table
+let earnings  = [];        // logger_earnings rows for LOGGER, today
+let recentDays = [];       // [{day, label, total}] for the 5 days before today
+let currentEditId = null;
+let map, mapReady = false, markers = [], meMarker = null, watchId = null, mePos = null;
+
+// The one building the logger most recently saved stays editable (typo grace window)
+// until they save a different building. Persisted so a reload doesn't lose the window.
+let _lastSavedId = localStorage.getItem('ct_last_saved_id') || null;
+
+// A building is locked (un-openable) once it has BOTH name + email,
+// EXCEPT the most recently saved one, which stays editable for typo fixes.
+function isLocked(b) {
+  if (!b) return false;
+  const complete = !!(b.name && b.email);
+  if (!complete) return false;          // incomplete buildings always editable
+  if (b.id === _lastSavedId) return false; // grace window for the last save
+  return true;
+}
+
+// ── PHOENIX-DAY HELPERS ─────────────────────────────────────────────────────
+// Phoenix has no DST, fixed UTC-7. Compute the YYYY-MM-DD for "now" in Phoenix.
+function phoenixDay() {
+  const fmt = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Phoenix', year: 'numeric', month: '2-digit', day: '2-digit'
+  });
+  return fmt.format(new Date()); // en-CA gives YYYY-MM-DD
+}
+function todayLabel() {
+  return new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/Phoenix', weekday: 'long', month: 'long', day: 'numeric'
+  }).format(new Date());
+}
+// Phoenix date string for N days before today (YYYY-MM-DD).
+function phoenixDayOffset(daysBack) {
+  const d = new Date(Date.now() - daysBack * 86400000);
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Phoenix', year: 'numeric', month: '2-digit', day: '2-digit'
+  }).format(d);
+}
+// Short label like "Mon, Jun 2" for a day N days back.
+function phoenixDayLabelOffset(daysBack) {
+  const d = new Date(Date.now() - daysBack * 86400000);
+  return new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/Phoenix', weekday: 'short', month: 'short', day: 'numeric'
+  }).format(d);
+}
+
+// ── GATE ────────────────────────────────────────────────────────────────────
+function checkGate() {
+  const who = document.getElementById('gateLogger').value;
+  const v = document.getElementById('gateInput').value;
+  const cfg = LOGGERS[who];
+  if (cfg && v === cfg.password) {
+    LOGGER = who;
+    sessionStorage.setItem('ct_logger_ok', '1');
+    sessionStorage.setItem('ct_logger_id', who);
+    document.getElementById('gate').style.display = 'none';
+    boot();
+  } else {
+    document.getElementById('gateErr').textContent = 'incorrect password';
+  }
+}
+if (sessionStorage.getItem('ct_logger_ok') === '1' && LOGGERS[sessionStorage.getItem('ct_logger_id')]) {
+  LOGGER = sessionStorage.getItem('ct_logger_id');
+  document.getElementById('gate').style.display = 'none';
+  window.addEventListener('DOMContentLoaded', boot);
+}
+
+// ── BOOT ────────────────────────────────────────────────────────────────────
+async function boot() {
+  // Alex gets the lunch-call workflow; reveal her tab and prep Google Calendar.
+  if (LOGGER === 'alex') {
+    document.getElementById('tabLunch').style.display = '';
+    document.getElementById('tabBoard').style.display = 'none';   // Alex doesn't need the board
+    initGcal();
+    loadAppointments();
+  }
+  await Promise.all([loadBuildings(), loadEarnings(), loadRecentDays()]);
+  renderToday(true);
+  renderBoard();
+  startDayWatcher();
+  subscribeBuildings();          // instant cross-logger sync
+  startBuildingRefresh();        // periodic + on-focus safety net
+}
+
+// Safety net in case Realtime isn't enabled or a push is missed: re-pull the
+// buildings every 45s and whenever the app returns to the foreground.
+function startBuildingRefresh() {
+  setInterval(refreshBuildings, 45000);
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) refreshBuildings();
+  });
+}
+
+// Live midnight rollover: if the Phoenix day changes while the app is open,
+// reload earnings (now empty for the new day) and re-render the Today view.
+let _watchedDay = null;
+async function checkDayRollover() {
+  const now = phoenixDay();
+  if (_watchedDay === null) { _watchedDay = now; return; }
+  if (now !== _watchedDay) {
+    _watchedDay = now;
+    await Promise.all([loadEarnings(), loadRecentDays()]);  // new day resets today; yesterday joins recent
+    renderToday(true);              // clears ring/total/count/log, shows updated recent days
+  }
+}
+function startDayWatcher() {
+  _watchedDay = phoenixDay();
+  // check every 60s (cheap; catches midnight within a minute)
+  setInterval(checkDayRollover, 60000);
+  // also check the moment the app returns to the foreground (phone slept past midnight)
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) checkDayRollover();
+  });
+}
+
+// ── SUPABASE LOADS ──────────────────────────────────────────────────────────
+async function loadBuildings() {
+  const { data, error } = await sb.from('buildings').select('*');
+  if (error) { console.error(error); toast('could not load buildings'); return; }
+  buildings = (data || []).sort((a,b) => (a.name||'').localeCompare(b.name||''));
+}
+
+// Re-fetch buildings and re-render the board/map so edits made by the OTHER
+// logger appear here too. Skips re-rendering while a modal is open so it can't
+// yank the list out from under someone mid-edit (data still updates in the array).
+let _refreshing = false;
+async function refreshBuildings() {
+  if (_refreshing) return;
+  _refreshing = true;
+  try {
+    const { data, error } = await sb.from('buildings').select('*');
+    if (error) { console.error(error); return; }
+    buildings = (data || []).sort((a,b) => (a.name||'').localeCompare(b.name||''));
+    // Don't re-render mid-edit; the open modal stays put, fresh data is already in memory.
+    if (!document.body.classList.contains('modal-open')) {
+      renderBoard();
+      if (mapReady) drawMarkers();
+    }
+  } finally {
+    _refreshing = false;
+  }
+}
+
+// Live sync: subscribe to any change on the shared buildings table so edits by
+// either logger show up instantly on every open device.
+function subscribeBuildings() {
+  try {
+    sb.channel('buildings-live')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'buildings' }, () => {
+        refreshBuildings();
+      })
+      .subscribe();
+  } catch (e) { console.error('realtime subscribe failed:', e); }
+}
+
+async function loadEarnings() {
+  const { data, error } = await sb.from('logger_earnings')
+    .select('*').eq('logger', LOGGER).eq('day', phoenixDay());
+  if (error) { console.error(error); return; }
+  earnings = data || [];
+}
+
+// Load the 5 days before today and total each (for the "Recent days" list).
+async function loadRecentDays() {
+  const days = [1,2,3,4,5].map(n => ({ n, day: phoenixDayOffset(n), label: phoenixDayLabelOffset(n) }));
+  const dayKeys = days.map(d => d.day);
+  const { data, error } = await sb.from('logger_earnings')
+    .select('day,amount').eq('logger', LOGGER).in('day', dayKeys);
+  if (error) { console.error(error); recentDays = days.map(d => ({ ...d, total: 0 })); return; }
+  const totals = {};
+  (data || []).forEach(r => { totals[r.day] = (totals[r.day] || 0) + (Number(r.amount) || 0); });
+  recentDays = days.map(d => ({ day: d.day, label: d.label, total: totals[d.day] || 0 }));
+}
+
+function earnedToday() {
+  return earnings.reduce((s, e) => s + (Number(e.amount) || 0), 0);
+}
+
+// Insert an earning row if it won't exceed the cap. Returns the amount actually paid (0 if capped/skipped).
+async function payReward(buildingId, kind, amount) {
+  const already = earnedToday();
+  if (already >= DAILY_CAP) return 0;
+  const room = DAILY_CAP - already;
+  const pay = Math.min(amount, room);
+  if (pay <= 0) return 0;
+  const row = {
+    id: `${LOGGER}_${buildingId}_${kind}`,
+    logger: LOGGER,
+    building_id: buildingId,
+    kind: kind,
+    day: phoenixDay(),
+    amount: pay,
+    created_at: Date.now()
+  };
+  const { error } = await sb.from('logger_earnings').upsert(row, { onConflict: 'id' });
+  if (error) { console.error(error); toast('earning not saved'); return 0; }
+  earnings.push(row);
+  return pay;
+}
+
+// ── VIEW SWITCH ─────────────────────────────────────────────────────────────
+function switchView(v) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.view === v));
+  document.getElementById('view-today').style.display = v === 'today' ? '' : 'none';
+  document.getElementById('view-board').style.display = v === 'board' ? '' : 'none';
+  document.getElementById('view-lunch').style.display = v === 'lunch' ? '' : 'none';
+  document.getElementById('view-map').style.display   = v === 'map'   ? '' : 'none';
+  if (v === 'today') renderToday(false);
+  if (v === 'lunch') renderLunch();
+  if (v === 'map') initMap();
+  // fade the view in on tab switch (Today already self-fades its content)
+  const shown = document.getElementById('view-' + v);
+  if (shown && v !== 'today') replayViewFade(shown);
+}
+function replayViewFade(el) {
+  el.classList.remove('view-fade');
+  void el.offsetWidth;   // force reflow to restart the animation
+  el.classList.add('view-fade');
+}
+
+// ── TODAY VIEW ──────────────────────────────────────────────────────────────
+function renderToday(fade) {
+  // Alex's Today is the lunch-appointment dashboard — no money, no cap.
+  if (LOGGER === 'alex') { renderTodayLunch(fade); return; }
+
+  const total = earnedToday();
+  const pct = Math.min(100, (total / DAILY_CAP) * 100);
+  const R = 56, C = 2 * Math.PI * R;
+  const dash = (pct / 100) * C;
+  const maxed = total >= DAILY_CAP;
+  const day = phoenixDay();
+
+  // count distinct buildings logged today (by this logger)
+  const buildingsToday = new Set(earnings.map(e => e.building_id)).size;
+
+  const todayRows = earnings
+    .slice()
+    .sort((a,b) => (b.created_at||0) - (a.created_at||0))
+    .map(e => {
+      const b = buildings.find(x => x.id === e.building_id);
+      const nm = b ? (b.name || 'building') : 'building';
+      const kindLbl = e.kind === 'contact' ? 'manager info' : 'new building';
+      return `<div class="log-card">
+        <div class="lc-main">
+          <div class="lc-name">${esc(nm)}</div>
+          <div class="lc-kind">${kindLbl}</div>
+        </div>
+        <div class="lc-amt">+$${e.amount}</div>
+      </div>`;
+    }).join('');
+
+  const html = `
+    <div class="dash-greeting">Hi, ${(LOGGERS[LOGGER] && LOGGERS[LOGGER].name) || 'there'} 🦍</div>
+    <div class="dash-date">${todayLabel()}</div>
+    <div class="earn-card">
+      <div class="ring-wrap">
+        <svg width="130" height="130" viewBox="0 0 130 130">
+          <circle cx="65" cy="65" r="${R}" fill="none" stroke="#e6e9ee" stroke-width="11"></circle>
+          <circle cx="65" cy="65" r="${R}" fill="none" stroke="${maxed ? '#2ecc71' : '#29ABE2'}" stroke-width="11"
+                  stroke-linecap="round" stroke-dasharray="${dash.toFixed(1)} ${C.toFixed(1)}"></circle>
+        </svg>
+        <div class="ring-center">
+          <div class="ring-amt">$${total}</div>
+          <div class="ring-cap">of $${DAILY_CAP}</div>
+        </div>
+      </div>
+      <div class="earn-side">
+        <div class="earn-side-title">Today's earnings</div>
+        <div class="earn-stat-row"><span class="earn-stat-num">${buildingsToday}</span><span class="earn-stat-lbl">buildings logged today</span></div>
+        <div class="earn-stat-row"><span class="earn-stat-num">$${Math.max(0, DAILY_CAP - total)}</span><span class="earn-stat-lbl">left until cap</span></div>
+        <div class="earn-capnote ${maxed ? 'maxed' : ''}">${maxed ? '🎉 daily cap reached — nice work!' : 'cap resets at midnight (Phoenix)'}</div>
+      </div>
+    </div>
+    <div class="dash-section-title">Today's log</div>
+    ${todayRows || `<div class="dash-empty"><div class="e-emoji">🏢</div>no buildings logged yet today — tap <strong>+ add</strong> to start earning</div>`}
+    ${recentDaysHtml()}
+  `;
+
+  const el = document.getElementById('todayContent');
+  el.innerHTML = html;
+  el.classList.remove('page-fade', 'page-shown');
+  void el.offsetWidth;
+  el.classList.add(fade ? 'page-fade' : 'page-shown');
+
+  // Celebrate the first time the Today view is seen at the daily cap.
+  // Tied to the dashboard (not the save action), so it lands no matter
+  // which view they were on when they logged the building that hit $250.
+  // Guarded per Phoenix-day so it shows exactly once.
+  if (maxed && _capCelebratedDay !== day) {
+    _capCelebratedDay = day;
+    celebrateCap();
+  }
+}
+let _capCelebratedDay = null;
+
+// Alex's Today — lunch appointments, no money/cap. Counts lunches booked today
+// and total, and lists today's booked lunches.
+let _lunchCal = null;      // {y, m} month shown on the dashboard calendar
+let _lunchCalSel = null;   // 'y-m-d' selected day, or null = today
+function renderTodayLunch(fade) {
+  const now = new Date();
+  if (!_lunchCal) _lunchCal = { y: now.getFullYear(), m: now.getMonth() };
+  const lunchesTotal = appointments.length;
+
+  // group appts by local day key
+  const dayKey = d => `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+  const byDay = {};
+  appointments.forEach(a => {
+    if (!a.starts_at) return;
+    const d = new Date(a.starts_at);
+    (byDay[dayKey(d)] = byDay[dayKey(d)] || []).push(a);
+  });
+  const todayKey = dayKey(now);
+  const selKey = _lunchCalSel || todayKey;
+  const lunchesToday = (byDay[todayKey] || []).length;
+
+  // ── calendar grid ──
+  // Shows the current month PLUS the next 14 days (spilling into next month,
+  // greyed) so at month-end she can still see what's coming up.
+  const { y, m } = _lunchCal;
+  const monthName = new Date(y, m, 1).toLocaleString('en-US', { month:'long', year:'numeric' });
+  const startDow = new Date(y, m, 1).getDay();
+  const firstOfMonth = new Date(y, m, 1);
+  const lastDay = new Date(y, m+1, 0);
+  const endDate = new Date(lastDay.getTime() + 14*86400000);  // +2 weeks past month end
+  let cells = '';
+  ['S','M','T','W','T','F','S'].forEach(d => { cells += `<div class="cal-dow">${d}</div>`; });
+  for (let i = 0; i < startDow; i++) cells += `<div class="cal-cell empty"></div>`;
+  for (let dt = new Date(firstOfMonth); dt <= endDate; dt.setDate(dt.getDate()+1)) {
+    const k = `${dt.getFullYear()}-${dt.getMonth()}-${dt.getDate()}`;
+    const cnt = (byDay[k] || []).length;
+    const nextMo = dt.getMonth() !== m || dt.getFullYear() !== y;
+    const cls = [ k===todayKey?'today':'', k===selKey?'sel':'', cnt?'has':'', nextMo?'next-mo':'' ].filter(Boolean).join(' ');
+    const dots = cnt ? `<span class="cal-dots">${Array.from({length: Math.min(cnt,4)}).map(()=>'<span class="cal-dot"></span>').join('')}</span>` : '';
+    cells += `<div class="cal-cell ${cls}" onclick="selectLunchDay('${k}')"><span class="cal-daynum">${dt.getDate()}</span>${dots}</div>`;
+  }
+  const calendar = `
+    <div class="lunch-cal">
+      <div class="cal-head">
+        <button class="cal-nav" onclick="lunchCalShift(-1)">‹</button>
+        <div class="cal-month">${monthName}</div>
+        <button class="cal-nav" onclick="lunchCalShift(1)">›</button>
+      </div>
+      <div class="cal-grid">${cells}</div>
+    </div>`;
+
+  // ── list for the selected day ──
+  const selAppts = (byDay[selKey] || []).slice().sort((a,b) => (a.starts_at||'').localeCompare(b.starts_at||''));
+  const selLabel = selKey === todayKey ? "Today's lunches" : selDayLabel(selKey);
+  const rows = selAppts.map(a => {
+    const b = buildings.find(x => x.id === a.building_id);
+    const nm = a.building_name || (b ? b.name : 'building');
+    return `<div class="log-card">
+      <div class="lc-main">
+        <div class="lc-name">${esc(nm)}</div>
+        <div class="lc-kind">lunch booked</div>
+      </div>
+      <div class="lc-time">${esc(fmtApptWhen(a.starts_at))}</div>
+    </div>`;
+  }).join('');
+
+  const html = `
+    <div class="dash-greeting">Hi, ${(LOGGERS[LOGGER] && LOGGERS[LOGGER].name) || 'there'} 🦍</div>
+    <div class="dash-date">${todayLabel()}</div>
+    <div class="lunch-today-card">
+      <div class="lt-stat">
+        <div class="lt-num">${lunchesToday}</div>
+        <div class="lt-lbl">lunch${lunchesToday===1?'':'es'} today</div>
+      </div>
+      <div class="lt-divider"></div>
+      <div class="lt-stat">
+        <div class="lt-num">${lunchesTotal}</div>
+        <div class="lt-lbl">booked total</div>
+      </div>
+    </div>
+    ${calendar}
+    <div class="dash-section-title">${esc(selLabel)}</div>
+    ${rows || `<div class="dash-empty"><div class="e-emoji">🍽️</div>no lunches ${selKey===todayKey?'booked yet today — head to <strong>Lunch Calls</strong> to start':'this day'}</div>`}
+  `;
+  const el = document.getElementById('todayContent');
+  el.innerHTML = html;
+  el.classList.remove('page-fade', 'page-shown');
+  void el.offsetWidth;
+  el.classList.add(fade ? 'page-fade' : 'page-shown');
+}
+function selDayLabel(k) {
+  const [y,m,d] = k.split('-').map(Number);
+  return new Date(y, m, d).toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric' });
+}
+function selectLunchDay(k) { _lunchCalSel = k; renderTodayLunch(false); }
+function lunchCalShift(delta) {
+  let { y, m } = _lunchCal; m += delta;
+  if (m < 0) { m = 11; y--; } if (m > 11) { m = 0; y++; }
+  _lunchCal = { y, m };
+  renderTodayLunch(false);
+}
+
+// Build the "Recent days" list (5 days before today). Days with $0 still show,
+// so a logger sees the full streak window.
+function recentDaysHtml() {
+  if (!recentDays.length) return '';
+  const rows = recentDays.map(d => {
+    const isCap = d.total >= DAILY_CAP;
+    return `<div class="recent-row">
+      <span class="recent-day">${esc(d.label)}</span>
+      <span class="recent-amt ${d.total > 0 ? 'has' : 'zero'}">$${d.total}${isCap ? ' <span class="recent-cap">cap</span>' : ''}</span>
+    </div>`;
+  }).join('');
+  return `<div class="dash-section-title" style="margin-top:24px">Recent days</div>
+    <div class="recent-card">${rows}</div>`;
+}
+
+// ── BOARD VIEW ──────────────────────────────────────────────────────────────
+function renderBoard() {
+  const list = buildings;
+  const grid = document.getElementById('boardGrid');
+  if (!list.length) {
+    grid.innerHTML = `<div class="dash-empty" style="grid-column:1/-1"><div class="e-emoji">🏢</div>no buildings yet</div>`;
+    return;
+  }
+  grid.innerHTML = list.map(b => {
+    const hasContact = !!(b.contact && b.email);
+    const locked = isLocked(b);
+    const typeClass = 'tag-' + (b.type || 'other').toLowerCase();
+    const meta = [b.city, b.floors ? `${b.floors} fl` : null].filter(Boolean).join(' · ');
+    const contactLine = hasContact
+      ? `<div class="bcard-contact">✓ ${esc(b.contact)} · ${esc(b.email)}</div>`
+      : (b.contact ? `<div class="bcard-nocontact">${esc(b.contact)} · email needed</div>`
+                   : `<div class="bcard-nocontact">no manager info yet</div>`);
+    return `<div class="bcard${locked ? ' locked' : ''}" onclick="${locked ? `lockedTap('${b.id}')` : `openEdit('${b.id}')`}">
+      ${locked ? '<div class="bcard-lock">🔒</div>' : (hasContact ? '<div class="bcard-check">✓</div>' : '')}
+      <div class="bcard-name">${esc(b.name || 'Unnamed')}</div>
+      <div class="bcard-meta">${esc(meta) || '—'}</div>
+      ${b.type ? `<span class="bcard-tag ${typeClass}">${esc(b.type)}</span>` : ''}
+      ${contactLine}
+    </div>`;
+  }).join('');
+}
+
+// ── ADD / EDIT ──────────────────────────────────────────────────────────────
+let placesAuto = null, pickedPlace = null;
+
+function openAdd() {
+  currentEditId = null;
+  pickedPlace = null;
+  document.getElementById('modalTitle').textContent = 'add building';
+  document.getElementById('modalSubtitle').textContent = '';
+  document.getElementById('rewardHint').style.display = '';
+  ['f_name','f_floors','f_address','f_contact','f_email'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('f_city').value = 'Scottsdale';
+  document.getElementById('f_type').value = 'Residential';
+  openModal();
+}
+
+function openEdit(id) {
+  const b = buildings.find(x => x.id === id);
+  if (!b) return;
+  if (isLocked(b)) return;   // locked buildings can't be opened
+  currentEditId = id;
+  pickedPlace = null;
+  document.getElementById('modalTitle').textContent = b.name || 'building';
+  document.getElementById('modalSubtitle').textContent = b.city || '';
+  document.getElementById('rewardHint').style.display = (b.contact && b.email) ? 'none' : '';
+  document.getElementById('f_name').value = b.name || '';
+  document.getElementById('f_city').value = b.city || 'Other';
+  document.getElementById('f_type').value = b.type || 'Other';
+  document.getElementById('f_floors').value = b.floors || '';
+  document.getElementById('f_address').value = b.address || '';
+  document.getElementById('f_contact').value = b.contact || '';
+  document.getElementById('f_email').value = b.email || '';
+  openModal();
+}
+
+// Tapping a locked card explains why it can't be edited.
+function lockedTap(id) {
+  toast('🔒 locked — already logged, can\'t be edited');
+}
+
+function openModal() {
+  document.getElementById('editModal').classList.add('open');
+  document.body.classList.add('modal-open');
+  setupPlaces();
+}
+function closeModal() {
+  document.getElementById('editModal').classList.remove('open');
+  document.body.classList.remove('modal-open');
+}
+
+function setupPlaces() {
+  const input = document.getElementById('f_address');
+  if (placesAuto || !window.google || !google.maps.places) return;
+  placesAuto = new google.maps.places.Autocomplete(input, { fields: ['geometry','formatted_address','name'] });
+  placesAuto.addListener('place_changed', () => {
+    const p = placesAuto.getPlace();
+    if (p && p.geometry) {
+      pickedPlace = {
+        lat: p.geometry.location.lat(),
+        lng: p.geometry.location.lng(),
+        address: p.formatted_address || p.name || input.value
+      };
+      input.value = pickedPlace.address;
+    }
+  });
+}
+
+async function saveBuilding() {
+  const name    = document.getElementById('f_name').value.trim();
+  const address = document.getElementById('f_address').value.trim();
+  const contact = document.getElementById('f_contact').value.trim();
+  const email   = document.getElementById('f_email').value.trim();
+
+  // All four fields are required to save — no exceptions.
+  let missing = '';
+  if (!name)         missing = 'Building Name';
+  else if (!address) missing = 'Address / Building Search';
+  else if (!contact) missing = 'Manager Name';
+  else if (!email)   missing = 'Manager Email';
+  if (missing) { toast('Please fill out ' + missing); return; }
+
+  // Basic sanity so a stray character can't pass as real data.
+  if (name.length < 2)    { toast('Building Name looks too short'); return; }
+  if (address.length < 5) { toast('Address looks too short — use the search'); return; }
+  if (contact.length < 2) { toast('Manager Name looks too short'); return; }
+  // Tighter email check: something@something.tld with a 2+ letter domain ending.
+  if (!/^[^\s@]+@[^\s@]+\.[A-Za-z]{2,}$/.test(email)) { toast('Please enter a valid Manager Email'); return; }
+
+  const isNew = !currentEditId;
+  const existing = isNew ? null : buildings.find(b => b.id === currentEditId);
+
+  // Address must come from the Google dropdown — i.e. it has real coordinates.
+  // Valid if: they just picked one (pickedPlace matches the field), OR they're
+  // editing a building that already had Google coords and didn't change the text.
+  const freshPick   = !!(pickedPlace && pickedPlace.address && pickedPlace.address.trim() === address);
+  const keptExisting = !!(existing && existing.lat != null && existing.lng != null
+                          && (existing.address || '').trim() === address);
+  if (!freshPick && !keptExisting) {
+    toast('Pick the address from the Google dropdown');
+    return;
+  }
+
+  // Build the row
+  const row = {
+    id: currentEditId || ('b_' + Date.now().toString(36) + Math.random().toString(36).slice(2,6)),
+    name,
+    city: document.getElementById('f_city').value,
+    type: document.getElementById('f_type').value,
+    floors: parseInt(document.getElementById('f_floors').value) || null,
+    address: address,
+    contact: contact,
+    email: email,
+  };
+  if (pickedPlace) { row.lat = pickedPlace.lat; row.lng = pickedPlace.lng; row.address = pickedPlace.address; }
+  else if (existing) { if (existing.lat != null) row.lat = existing.lat; if (existing.lng != null) row.lng = existing.lng; }
+
+  // Reward bookkeeping fields (preserve existing where set)
+  const alreadyPaidContact = existing && existing.contact_reward_paid;
+
+  row.logged_by = (existing && existing.logged_by) ? existing.logged_by : LOGGER;
+
+  // Flat $20 reward: paid once, the first time a building has BOTH name and email
+  // present and hasn't been paid before. Applies whether the building is brand-new
+  // or an existing one getting its manager info filled in — no separate new-building bonus.
+  const earnsContact = !!(contact && email) && !alreadyPaidContact;
+  row.contact_reward_paid = alreadyPaidContact || earnsContact || (existing ? !!existing.contact_reward_paid : false);
+
+  // Save the building (upsert into shared table)
+  const { error } = await sb.from('buildings').upsert(row, { onConflict: 'id' });
+  if (error) { console.error(error); toast('could not save building'); return; }
+
+  // Update local cache
+  const idx = buildings.findIndex(b => b.id === row.id);
+  if (idx >= 0) buildings[idx] = { ...buildings[idx], ...row };
+  else buildings.push(row);
+  buildings.sort((a,b) => (a.name||'').localeCompare(b.name||''));
+
+  // This becomes the one editable (typo grace) building; whatever was the previous
+  // last-saved building now locks automatically on the next render.
+  _lastSavedId = row.id;
+  localStorage.setItem('ct_last_saved_id', row.id);
+
+  // Pay reward (respecting the daily cap)
+  let paid = 0;
+  const capBefore = earnedToday() >= DAILY_CAP;
+  if (earnsContact) paid += await payReward(row.id, 'contact', REWARD_CONTACT);
+
+  closeModal();
+  renderBoard();
+  renderToday(false);
+  if (mapReady) drawMarkers();
+
+  if (paid > 0) {
+    showRewardPop(paid, 'manager info logged');
+  } else if (earnsContact && capBefore) {
+    toast('saved — daily $250 cap already reached');
+  } else {
+    toast('saved');
+  }
+}
+
+// ── REWARD POP / TOAST ──────────────────────────────────────────────────────
+function showRewardPop(amt, lbl) {
+  document.getElementById('rpAmt').textContent = '+$' + amt;
+  document.getElementById('rpLbl').textContent = lbl;
+  const pop = document.getElementById('rewardPop');
+  pop.classList.add('show');
+  setTimeout(() => pop.classList.remove('show'), 1400);
+}
+
+// ── $250 CAP CELEBRATION ─────────────────────────────────────────────────────
+function celebrateCap() {
+  // banner
+  const banner = document.getElementById('hoorayBanner');
+  banner.classList.add('show');
+  setTimeout(() => banner.classList.remove('show'), 3200);
+
+  // confetti burst — lightweight, CSS-animated, self-cleaning (mobile-friendly)
+  const layer = document.getElementById('confettiLayer');
+  const colors = ['#29ABE2', '#1A2B4A', '#2ecc71', '#f39c12', '#e74c3c', '#ffffff'];
+  const N = 90;
+  for (let i = 0; i < N; i++) {
+    const c = document.createElement('div');
+    c.className = 'confetti-bit';
+    const left = Math.random() * 100;
+    const delay = Math.random() * 0.4;
+    const dur = 2.2 + Math.random() * 1.6;
+    const size = 7 + Math.random() * 7;
+    const rot = Math.random() * 360;
+    const drift = (Math.random() * 2 - 1) * 120;
+    c.style.left = left + 'vw';
+    c.style.width = size + 'px';
+    c.style.height = (size * 0.6) + 'px';
+    c.style.background = colors[i % colors.length];
+    c.style.setProperty('--drift', drift + 'px');
+    c.style.setProperty('--rot', rot + 'deg');
+    c.style.animationDelay = delay + 's';
+    c.style.animationDuration = dur + 's';
+    layer.appendChild(c);
+    setTimeout(() => c.remove(), (dur + delay) * 1000 + 100);
+  }
+
+  // a celebratory haptic buzz on supported phones
+  if (navigator.vibrate) navigator.vibrate([40, 60, 40, 60, 120]);
+}
+let toastTimer = null;
+function toast(msg, reward) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.toggle('reward', !!reward);
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2600);
+}
+
+// ── MAP ─────────────────────────────────────────────────────────────────────
+function initMap() {
+  if (mapReady || !window.google) return;
+  map = new google.maps.Map(document.getElementById('map'), {
+    center: { lat: 33.5092, lng: -111.8990 }, // Gainey Ranch-ish
+    zoom: 11, disableDefaultUI: true, zoomControl: true,
+    gestureHandling: 'greedy',
+    styles: [{ featureType: 'poi', stylers: [{ visibility: 'off' }] }]
+  });
+  mapReady = true;
+  drawMarkers();
+}
+
+function drawMarkers() {
+  markers.forEach(m => m.setMap(null));
+  markers = [];
+  buildings.forEach(b => {
+    if (b.lat == null || b.lng == null) return;
+    // Logger map: two states only — green = has manager name + email, red = missing contact.
+    const hasContact = !!(b.contact && b.email);
+    const color = hasContact ? '#2ECC71' : '#CC2200';
+    const div = document.createElement('div');
+    div.className = 'ct-pin';
+    div.style.setProperty('--pin', color);
+    div.innerHTML = `<div class="ct-pin-teardrop"></div>
+      <div class="ct-qv">
+        <div class="ct-qv-name">${esc(b.name||'building')}</div>
+        <div class="ct-qv-meta">${esc(b.city||'')}${b.type ? ' · ' + esc(b.type) : ''}</div>
+        ${b.contact ? `<div class="ct-qv-row">${esc(b.contact)}</div>` : ''}
+      </div>`;
+    const overlay = new google.maps.OverlayView();
+    overlay.onAdd = function() { this.getPanes().floatPane.appendChild(div); };
+    overlay.draw = function() {
+      const pos = this.getProjection().fromLatLngToDivPixel(new google.maps.LatLng(b.lat, b.lng));
+      div.style.left = pos.x + 'px'; div.style.top = pos.y + 'px';
+    };
+    overlay.onRemove = function() { if (div.parentNode) div.parentNode.removeChild(div); };
+    div.addEventListener('click', () => openEdit(b.id));
+    overlay.setMap(map);
+    markers.push({ setMap: m => overlay.setMap(m) });
+  });
+}
+
+function toggleLocate() {
+  const btn = document.getElementById('locateBtn');
+  if (watchId != null) {
+    navigator.geolocation.clearWatch(watchId); watchId = null;
+    btn.classList.remove('active');
+    if (meMarker) { meMarker.setMap(null); meMarker = null; }
+    document.getElementById('nearPanel').classList.remove('show');
+    return;
+  }
+  if (!navigator.geolocation) { toast('geolocation not available'); return; }
+  btn.classList.add('active');
+  watchId = navigator.geolocation.watchPosition(pos => {
+    const ll = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+    mePos = ll;
+    if (!meMarker) {
+      const div = document.createElement('div');
+      div.className = 'me-dot';
+      const overlay = new google.maps.OverlayView();
+      overlay.onAdd = function() { this.getPanes().floatPane.appendChild(div); };
+      overlay.draw = function() {
+        const p = this.getProjection().fromLatLngToDivPixel(new google.maps.LatLng(ll.lat, ll.lng));
+        div.style.left = p.x + 'px'; div.style.top = p.y + 'px';
+      };
+      overlay.onRemove = function() { if (div.parentNode) div.parentNode.removeChild(div); };
+      overlay.setMap(map);
+      meMarker = { setMap: m => overlay.setMap(m), update: (la) => { ll.lat = la.lat; ll.lng = la.lng; overlay.draw(); } };
+      map.panTo(ll); map.setZoom(14);
+    } else {
+      meMarker.update(ll);
+    }
+    updateNearest();
+  }, () => toast('could not get location'), { enableHighAccuracy: true });
+}
+
+function haversineMi(a, b) {
+  const R = 3958.8, toRad = x => x * Math.PI / 180;
+  const dLat = toRad(b.lat - a.lat), dLng = toRad(b.lng - a.lng);
+  const s = Math.sin(dLat/2)**2 + Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * Math.sin(dLng/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(s), Math.sqrt(1-s));
+}
+
+function updateNearest() {
+  if (!mePos) return;
+  const placed = buildings
+    .filter(b => b.lat != null && b.lng != null)
+    .map(b => ({ b, d: haversineMi(mePos, { lat: b.lat, lng: b.lng }) }))
+    .sort((x, y) => x.d - y.d)
+    .slice(0, 5);
+  const panel = document.getElementById('nearPanel');
+  if (!placed.length) { panel.classList.remove('show'); return; }
+  let html = '<div class="near-title">Nearest to you</div>';
+  placed.forEach(({ b, d }) => {
+    const color = (b.contact && b.email) ? '#2ECC71' : '#CC2200';
+    const dist = d < 0.1 ? `${Math.round(d * 5280)}ft` : `${d.toFixed(1)}mi`;
+    html += `<div class="near-row" onclick="openEdit('${b.id}')">
+      <span class="near-dot" style="background:${color}"></span>
+      <span class="near-info"><span class="near-name">${esc(b.name || 'building')}</span></span>
+      <span class="near-dist">${dist}</span>
+    </div>`;
+  });
+  panel.innerHTML = html;
+  panel.classList.add('show');
+}
+
+// ── BUSINESS-CARD SCANNER ───────────────────────────────────────────────────
+let scanImageData = null;
+function openScan() {
+  if (!localStorage.getItem('ct_api_key')) { openSettings(); toast('add your API key first'); return; }
+  document.getElementById('scanModal').classList.add('open');
+  document.body.classList.add('modal-open');
+  document.getElementById('scanPreview').style.display = 'none';
+  document.getElementById('scanStatus').style.display = 'none';
+  document.getElementById('scanReview').style.display = 'none';
+  document.getElementById('scanFooter').style.display = 'none';
+  document.getElementById('scanArea').style.display = '';
+}
+function closeScan() {
+  document.getElementById('scanModal').classList.remove('open');
+  document.body.classList.remove('modal-open');
+}
+function handleScanFile(ev) {
+  const file = ev.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = async () => {
+    scanImageData = reader.result.split(',')[1];
+    const mime = reader.result.split(';')[0].split(':')[1];
+    const img = document.getElementById('scanPreview');
+    img.src = reader.result; img.style.display = 'block';
+    document.getElementById('scanArea').style.display = 'none';
+    document.getElementById('scanStatus').style.display = 'block';
+    await readCard(scanImageData, mime);
+  };
+  reader.readAsDataURL(file);
+}
+async function readCard(b64, mime) {
+  const key = localStorage.getItem('ct_api_key');
+  try {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': key,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 300,
+        messages: [{
+          role: 'user',
+          content: [
+            { type: 'image', source: { type: 'base64', media_type: mime, data: b64 } },
+            { type: 'text', text: 'Extract the contact name and email from this business card. Respond ONLY with JSON: {"name":"","email":""}. No markdown, no extra text.' }
+          ]
+        }]
+      })
+    });
+    const data = await resp.json();
+    const text = (data.content || []).filter(c => c.type === 'text').map(c => c.text).join('').replace(/```json|```/g,'').trim();
+    let parsed = {};
+    try { parsed = JSON.parse(text); } catch { parsed = {}; }
+    document.getElementById('scan_name').value = parsed.name || '';
+    document.getElementById('scan_email').value = parsed.email || '';
+    document.getElementById('scanStatus').style.display = 'none';
+    document.getElementById('scanReview').style.display = 'block';
+    document.getElementById('scanFooter').style.display = '';
+  } catch (e) {
+    console.error(e);
+    document.getElementById('scanStatus').textContent = 'could not read card — enter manually';
+    document.getElementById('scanReview').style.display = 'block';
+    document.getElementById('scanFooter').style.display = '';
+  }
+}
+function useScanResult() {
+  const nm = document.getElementById('scan_name').value.trim();
+  const em = document.getElementById('scan_email').value.trim();
+  closeScan();
+  // open the add sheet pre-filled so the logger picks the building it belongs to
+  openAdd();
+  document.getElementById('f_contact').value = nm;
+  document.getElementById('f_email').value = em;
+  toast('manager info ready — name the building & save');
+}
+
+// ── SETTINGS ────────────────────────────────────────────────────────────────
+function openSettings() {
+  document.getElementById('apiKeyInput').value = localStorage.getItem('ct_api_key') || '';
+  document.getElementById('settingsModal').classList.add('open');
+  document.body.classList.add('modal-open');
+}
+function closeSettings() {
+  document.getElementById('settingsModal').classList.remove('open');
+  document.body.classList.remove('modal-open');
+}
+function saveApiKey() {
+  localStorage.setItem('ct_api_key', document.getElementById('apiKeyInput').value.trim());
+  closeSettings();
+  toast('API key saved');
+}
+
+// ── UTIL ────────────────────────────────────────────────────────────────────
+function esc(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// LUNCH CALLS WORKFLOW (Alex / Logger 2 only)
+// Building list → tap opens Google Maps to the address (get the phone, call) →
+// "add lunch appt" picks date & time → creates the event on the shared Google
+// Calendar via the Calendar API, and records it in Supabase so it shows as booked.
+// ══════════════════════════════════════════════════════════════════════════════
+let appointments = [];       // ct_appointments rows (this logger's booked lunches)
+let _gapiReady = false, _gisReady = false, _tokenClient = null, _gcalToken = null;
+let _pendingApptBuildingId = null;
+
+// --- Google API init ---
+function initGcal(_tries) {
+  _tries = _tries || 0;
+  const gapiHere = (typeof gapi !== 'undefined');
+  const gisHere  = (typeof google !== 'undefined' && google.accounts && google.accounts.oauth2);
+  if ((!gapiHere || !gisHere) && _tries < 20) {
+    // scripts still loading — retry shortly
+    setTimeout(() => initGcal(_tries + 1), 300);
+    return;
+  }
+  if (gapiHere && !_gapiReady) {
+    gapi.load('client', async () => {
+      try {
+        await gapi.client.init({ discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest'] });
+        _gapiReady = true;
+      } catch (e) { console.error('gapi init failed:', e); }
+    });
+  }
+  if (gisHere && !_gisReady) {
+    try {
+      _tokenClient = google.accounts.oauth2.initTokenClient({
+        client_id: GCAL_CLIENT_ID,
+        scope: GCAL_SCOPES,
+        callback: (resp) => {
+          if (resp && resp.access_token) {
+            _gcalToken = resp.access_token;
+            if (_afterAuth) { const fn = _afterAuth; _afterAuth = null; fn(); }
+          }
+        },
+      });
+      _gisReady = true;
+    } catch (e) { console.error('GIS init failed:', e); }
+  }
+}
+let _afterAuth = null;
+// Ensure we have a Calendar access token, then run cb. Prompts Alex to authorize
+// the first time (or when the token has expired).
+function ensureGcalAuth(cb) {
+  if (GCAL_CLIENT_ID === 'PASTE_YOUR_OAUTH_CLIENT_ID_HERE') {
+    toast('⚠ Google Calendar not set up yet');
+    return;
+  }
+  if (!_gapiReady || !_gisReady || !_tokenClient) {
+    toast('⚠ calendar still loading — try again');
+    return;
+  }
+  if (_gcalToken) { cb(); return; }
+  _afterAuth = cb;
+  _tokenClient.requestAccessToken({ prompt: 'consent' });
+}
+
+// --- Appointments (Supabase) ---
+async function loadAppointments() {
+  try {
+    const { data, error } = await sb.from('ct_appointments')
+      .select('*').eq('logger', LOGGER);
+    if (error) { console.error(error); return; }
+    appointments = data || [];
+    if (document.getElementById('view-lunch').style.display !== 'none') renderLunch();
+    if (document.getElementById('view-today').style.display !== 'none') renderToday(false);
+  } catch (e) { console.error(e); }
+}
+function apptForBuilding(id) {
+  return appointments
+    .filter(a => a.building_id === id)
+    .sort((a,b) => (b.starts_at||'').localeCompare(a.starts_at||''))[0];
+}
+
+// Only these pipeline stages are safe to cold-call. Anything else — "client"
+// (current customer) or any future stage — is excluded from the lunch list so
+// Alex never calls an existing customer. Column is buildings.stage.
+const LUNCH_CALLABLE = ['cold', 'contacted', 'quoted'];
+function isLunchCallable(b) {
+  return !!b && LUNCH_CALLABLE.includes(String(b.stage || '').trim().toLowerCase());
+}
+
+// --- Lunch view ---
+function renderLunch() {
+  const el = document.getElementById('lunchContent');
+  // Only cold-callable buildings (cold/contacted/quoted) — never current clients.
+  const list = buildings.filter(isLunchCallable).sort((a,b) => (a.name||'').localeCompare(b.name||''));
+  const booked = appointments.length;
+
+  const script = `
+    <div class="call-script${(()=>{try{return localStorage.getItem('ct_script_collapsed')==='1'?' collapsed':''}catch(e){return ''}})()}" id="callScript">
+      <div class="cs-head" onclick="toggleScript()">
+        <span class="cs-title">📞 Call Script</span>
+        <span class="cs-collapse" id="csCollapse">▾</span>
+      </div>
+      <div class="cs-body" id="csBody">
+        <div class="cs-opener">"Hi! Is <span class="cs-blank">____</span> in the office today?"</div>
+
+        <div class="cs-scenario">
+          <span class="cs-cue">they say · "Yes, who is this?"</span>
+          <div class="cs-say">"Yea! This is Alex — could you send me to her?"</div>
+        </div>
+
+        <div class="cs-scenario">
+          <span class="cs-cue">they say · "No, how can I help?"</span>
+          <div class="cs-say">"Hi! My name's Alex. I was wondering if I could bring lunch for the office tomorrow &amp; leave <span class="cs-blank">____</span> with a window cleaning quote — is that something you could confirm with her?"</div>
+        </div>
+
+        <div class="cs-scenario">
+          <span class="cs-cue">they say · "This is her"</span>
+          <div class="cs-say">"Oh great! My name's Alex. I was wondering if I could bring lunch to the office tomorrow &amp; leave you with a window cleaning quote."</div>
+        </div>
+
+        <div class="cs-then">→ then ask: <b>"Awesome — how many are in the office?"</b></div>
+      </div>
+    </div>`;
+
+  let html = `
+    <div class="dash-greeting">Lunch Calls 🍽️</div>
+    <div class="dash-date">${todayLabel()} · <b style="color:var(--sky)">${booked}</b> booked</div>
+    ${script}`;
+  if (!list.length) {
+    html += `<div class="dash-empty"><div class="e-emoji">🏢</div>no buildings yet</div>`;
+    el.innerHTML = html; return;
+  }
+  // Sort order for the active call queue: no-answer sinks to bottom → priority
+  // (flagged in CRM) → has manager name → apartments → alphabetical.
+  const isApt = b => /apart|residential|condo|multifamily|multi-family/i.test(`${b.type||''} ${b.name||''}`);
+  const sorter = (a,b) => {
+    const na = _noAnswer[a.id] || 0, nb = _noAnswer[b.id] || 0;
+    if (!!na !== !!nb) return na ? 1 : -1;
+    if (na && nb) return na - nb;
+    const pa = Number(a.lunch_priority || 0), pb = Number(b.lunch_priority || 0);
+    if (pa && pb) return pb - pa;
+    if (pa !== pb) return pa ? -1 : 1;
+    const ca = (a.contact||'').trim() ? 0 : 1, cb = (b.contact||'').trim() ? 0 : 1;
+    if (ca !== cb) return ca - cb;
+    const ra = isApt(a) ? 0 : 1, rb = isApt(b) ? 0 : 1;
+    if (ra !== rb) return ra - rb;
+    return (a.name||'').localeCompare(b.name||'');
+  };
+  // Booked buildings leave the call queue and go into the Scheduled folder.
+  const active    = list.filter(b => !apptForBuilding(b.id)).sort(sorter);
+  const scheduled = list.filter(b =>  apptForBuilding(b.id))
+    .sort((a,b) => (apptForBuilding(a.id).starts_at||'').localeCompare(apptForBuilding(b.id).starts_at||''));
+
+  html += `<div class="lunch-hint" style="margin-top:16px">tap 📞 to auto-find the office number, then book the lunch</div>`;
+  html += '<div class="lunch-list">';
+  html += active.length ? active.map(lunchCallCard).join('')
+                        : `<div class="dash-empty"><div class="e-emoji">🎉</div>queue clear — every building's been handled</div>`;
+  html += '</div>';
+
+  if (scheduled.length) {
+    html += `<div class="dash-section-title" style="margin-top:26px">📅 Scheduled Lunches (${scheduled.length})</div>`;
+    html += '<div class="lunch-list">';
+    html += scheduled.map(lunchScheduledCard).join('');
+    html += '</div>';
+  }
+  el.innerHTML = html;
+}
+
+// Full call card (active queue): search, live notes, book, didn't-answer.
+function lunchCallCard(b) {
+  const meta = [b.city, b.address].filter(Boolean).join(' · ');
+  const sunk = _noAnswer[b.id] ? ' no-answer' : '';
+  const hasNote = (b.notes||'').trim();
+  return `<div class="lunch-card${b.lunch_priority ? ' priority' : ''}${sunk}" id="lcard_${b.id}">
+        <div class="lunch-card-info">
+          <div class="lunch-name">${b.lunch_priority ? '⭐ ' : ''}${esc(b.name || 'Unnamed')}${_noAnswer[b.id] ? ' <span class="na-tag">no answer</span>' : ''}</div>
+          <div class="lunch-meta">${esc(meta) || '—'}</div>
+          ${(b.contact||'').trim() ? `<div class="lunch-mgr">👤 ask for ${esc(b.contact)}</div>` : ''}
+          <div class="lunch-phone" id="phone_${b.id}">${b.phone ? phoneChip(b.phone) : ''}</div>
+        </div>
+        <div class="lunch-actions">
+          <button class="lunch-act findnum" onclick="findNumber('${b.id}')">📞 Find Number</button>
+          <button class="lunch-act search" onclick="openBuildingSearch('${b.id}')">🔍 Search</button>
+          <button class="lunch-act note${hasNote?' has':''}" onclick="toggleNote('${b.id}')">📝 Notes</button>
+        </div>
+        <div class="lunch-note-wrap" id="note_${b.id}" style="display:${hasNote?'block':'none'}">
+          <textarea class="lunch-note-input" placeholder="type notes live during the call…" oninput="saveLiveNote('${b.id}', this.value)">${esc(b.notes||'')}</textarea>
+        </div>
+        <div class="lunch-btns">
+          <button class="lunch-book-btn" onclick="openApptModal('${b.id}')">🍽️ book lunch</button>
+          <button class="lunch-na-btn" onclick="markNoAnswer('${b.id}')">📵 didn't answer</button>
+        </div>
+    </div>`;
+}
+
+// Render a found phone number as a tap-to-call chip.
+function phoneChip(num) {
+  const tel = String(num).replace(/[^0-9+]/g, '');
+  return `<a class="phone-chip" href="tel:${tel}">📞 ${esc(num)}</a>`;
+}
+
+// Find the building's office phone via Google Places (name + address), then
+// show it as a tap-to-call chip. Saves it to the building so it sticks.
+function findNumber(id) {
+  const b = buildings.find(x => x.id === id);
+  if (!b) return;
+  const slot = document.getElementById('phone_' + id);
+  if (!window.google || !google.maps || !google.maps.places) {
+    if (slot) slot.innerHTML = '<span class="phone-err">maps not loaded — try again</span>';
+    return;
+  }
+  if (slot) slot.innerHTML = '<span class="phone-loading">🔎 searching…</span>';
+  const query = [b.name, b.address, b.city].filter(Boolean).join(' ');
+  const svc = new google.maps.places.PlacesService(document.createElement('div'));
+  svc.findPlaceFromQuery({ query, fields: ['place_id','name'] }, (results, status) => {
+    if (status !== google.maps.places.PlacesServiceStatus.OK || !results || !results.length) {
+      if (slot) slot.innerHTML = '<span class="phone-err">no number found — try 🔍 Search</span>';
+      return;
+    }
+    svc.getDetails({ placeId: results[0].place_id, fields: ['formatted_phone_number','international_phone_number'] }, (place, st2) => {
+      const num = place && (place.formatted_phone_number || place.international_phone_number);
+      if (st2 === google.maps.places.PlacesServiceStatus.OK && num) {
+        if (slot) slot.innerHTML = phoneChip(num);
+        // persist on the building so it's there next time
+        b.phone = num;
+        sb.from('buildings').update({ phone: num }).eq('id', id).then(({error}) => { if (error) console.error(error); });
+      } else {
+        if (slot) slot.innerHTML = '<span class="phone-err">no number found — try 🔍 Search</span>';
+      }
+    });
+  });
+}
+
+// Compact card for a building that already has a booked lunch.
+function lunchScheduledCard(b) {
+  const appt = apptForBuilding(b.id);
+  const meta = [b.city, b.address].filter(Boolean).join(' · ');
+  return `<div class="lunch-card scheduled" id="lcard_${b.id}">
+      <div class="lunch-card-info">
+        <div class="lunch-name">${esc(b.name || 'Unnamed')}</div>
+        <div class="lunch-meta">${esc(meta) || '—'}</div>
+        <div class="lunch-booked">🍽️ ${esc(fmtApptWhen(appt.starts_at))}</div>
+      </div>
+      <button class="lunch-rebook-btn" onclick="openApptModal('${b.id}')">re-book</button>
+    </div>`;
+}
+
+// Collapse/expand the call script (state remembered per device).
+function toggleScript() {
+  const el = document.getElementById('callScript');
+  if (!el) return;
+  const collapsed = el.classList.toggle('collapsed');
+  try { localStorage.setItem('ct_script_collapsed', collapsed ? '1' : '0'); } catch(e){}
+}
+// Toggle the live-notes box open/closed on a card.
+function toggleNote(id) {
+  const w = document.getElementById('note_' + id);
+  if (!w) return;
+  const open = w.style.display !== 'none';
+  w.style.display = open ? 'none' : 'block';
+  if (!open) { const t = w.querySelector('textarea'); if (t) t.focus(); }
+}
+// Save notes live (debounced) to the shared buildings table.
+let _noteTimers = {};
+function saveLiveNote(id, val) {
+  const b = buildings.find(x => x.id === id);
+  if (b) b.notes = val;
+  clearTimeout(_noteTimers[id]);
+  _noteTimers[id] = setTimeout(async () => {
+    try { await sb.from('buildings').update({ notes: val }).eq('id', id); }
+    catch (e) { console.error('note save failed:', e); }
+  }, 600);
+}
+
+// Mark a building "didn't answer": it fades out and drops to the bottom of the queue.
+// Session-only (resets on reload). Value is the time sunk, for ordering.
+const _noAnswer = {};
+function markNoAnswer(id) {
+  const card = document.getElementById('lcard_' + id);
+  if (card) {
+    card.style.transition = 'transform 0.28s ease-in, opacity 0.28s ease-in';
+    card.style.transform = 'translateX(110%)';
+    card.style.opacity = '0';
+  }
+  setTimeout(() => { _noAnswer[id] = Date.now(); renderLunch(); }, 260);
+}
+
+function fmtApptWhen(iso) {
+  if (!iso) return '';
+  try {
+    return new Date(iso).toLocaleString('en-US', { timeZone:'America/Phoenix', month:'short', day:'numeric', hour:'numeric', minute:'2-digit' });
+  } catch(e) { return iso; }
+}
+
+// Tap a building → new tab to Google Maps for its address (phone shows there).
+// Tap "Search Google" → new tab with a Google web search for the building
+// (name + address), where its phone number shows.
+function openBuildingSearch(id) {
+  const b = buildings.find(x => x.id === id);
+  if (!b) return;
+  const q = encodeURIComponent([b.name, b.address, b.city].filter(Boolean).join(' '));
+  window.open('https://www.google.com/search?q=' + q, '_blank');
+}
+
+// --- Appointment modal ---
+function openApptModal(id) {
+  _pendingApptBuildingId = id;
+  const b = buildings.find(x => x.id === id);
+  document.getElementById('apptTitle').textContent = b ? (b.name || 'building') : 'building';
+  // default to today at 12:00 (Phoenix)
+  const now = new Date();
+  const y = now.getFullYear(), m = String(now.getMonth()+1).padStart(2,'0'), d = String(now.getDate()).padStart(2,'0');
+  document.getElementById('appt_date').value = `${y}-${m}-${d}`;
+  document.getElementById('appt_time').value = '12:00';
+  // prefill notes with any existing building note as a starting point
+  document.getElementById('appt_notes').value = (b && b.notes) ? String(b.notes) : '';
+  document.getElementById('apptModal').classList.add('open');
+  document.body.classList.add('modal-open');
+}
+function closeApptModal() {
+  document.getElementById('apptModal').classList.remove('open');
+  document.body.classList.remove('modal-open');
+  _pendingApptBuildingId = null;
+}
+function saveAppt() {
+  const id = _pendingApptBuildingId;
+  const b = buildings.find(x => x.id === id);
+  if (!b) return;
+  const date = document.getElementById('appt_date').value;
+  const time = document.getElementById('appt_time').value;
+  if (!date || !time) { toast('⚠ pick a date and time'); return; }
+  // Phoenix is UTC-7 year round (no DST) → build an explicit -07:00 timestamp.
+  const startsAt = `${date}T${time}:00-07:00`;
+  const notes = document.getElementById('appt_notes').value.trim();
+  ensureGcalAuth(() => createLunchEvent(b, startsAt, notes));
+}
+async function createLunchEvent(b, startsAt, notes) {
+  const start = new Date(startsAt);
+  const end = new Date(start.getTime() + 60*60000); // 1 hour lunch
+  const descLines = ['Lunch appointment set up by Alex (Clean Towers).'];
+  if ((b.contact||'').trim()) descLines.push(`Manager: ${b.contact}`);
+  if (notes) descLines.push('', notes);
+  const event = {
+    summary: `Lunch — ${b.name || 'building'}`,
+    location: [b.address, b.city].filter(Boolean).join(', '),
+    description: descLines.join('\n'),
+    start: { dateTime: start.toISOString(), timeZone: 'America/Phoenix' },
+    end:   { dateTime: end.toISOString(),   timeZone: 'America/Phoenix' },
+    attendees: GCAL_INVITE_EMAIL ? [{ email: GCAL_INVITE_EMAIL }] : undefined,
+  };
+  try {
+    gapi.client.setToken({ access_token: _gcalToken });
+    const resp = await gapi.client.calendar.events.insert({
+      calendarId: GCAL_CALENDAR_ID,
+      resource: event,
+      sendUpdates: 'all',   // email AJ the invite so it lands on his calendar
+    });
+    const eventId = resp && resp.result && resp.result.id;
+    // Record in Supabase so it shows as booked across devices.
+    const row = {
+      id: `${LOGGER}_${b.id}_${Date.now().toString(36)}`,
+      logger: LOGGER, building_id: b.id, building_name: b.name || null,
+      starts_at: start.toISOString(), gcal_event_id: eventId || null,
+      notes: notes || null,
+      created_at: Date.now(),
+    };
+    appointments.push(row);
+    sb.from('ct_appointments').upsert(row, { onConflict: 'id' }).then(({error}) => { if (error) console.error(error); });
+    closeApptModal();
+    renderLunch();
+    renderToday(false);   // keep Alex's Today lunch counts in sync
+    toast('🍽️ lunch added to calendar', true);
+  } catch (e) {
+    console.error('event insert failed:', e);
+    // token may have expired mid-session — clear it so the next try re-auths
+    if (e && (e.status === 401 || (e.result && e.result.error && e.result.error.code === 401))) { _gcalToken = null; }
+    toast('⚠ could not add to calendar');
+  }
+}
+</script>
+</body>
+</html>
